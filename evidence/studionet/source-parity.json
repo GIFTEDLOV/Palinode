@@ -7,6 +7,9 @@
   },
   "contract_path": "contracts/palinode.py",
   "contract_sha256": "eb39390b9da51e70aa54af130c1d45ab392c1b85d327975c462df5d5f10984be",
+  "deployment_embedded_sha256": "eb39390b9da51e70aa54af130c1d45ab392c1b85d327975c462df5d5f10984be",
+  "deployment_embedded_byte_length": 136876,
+  "source_sha_match": true,
   "deployed": true,
   "network": "studionet",
   "source_parity": "LOCAL_SOURCE_HASH_RECORDED; NETWORK_SOURCE_ENDPOINT_UNAVAILABLE_IN_INSTALLED_SDK"
