@@ -18,4 +18,8 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'off',
     },
   },
+  {
+    files: ['api/**/*.js', 'scripts/browser-qa.mjs', 'scripts/local-production-server.mjs'],
+    languageOptions: { globals: { ...globals.node, ...globals.es2022, fetch: 'readonly', Headers: 'readonly', Response: 'readonly' } },
+  },
 );

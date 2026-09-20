@@ -10,6 +10,8 @@ import { connectWallet, loadSnapshot, pollTransaction, walletClient } from './li
 
 const EMPTY_SNAPSHOT: ProtocolSnapshot = { nodes: [], edges: [], authorities: [], revocations: [], recoveries: [], loading: true, error: null, refreshedAt: null };
 const TX_KEY = 'palinode.tracked.transactions.v1';
+const SNAPSHOT_CACHE_KEY = 'palinode.derived.snapshot.v1';
+const SNAPSHOT_CACHE_TTL_MS = 15_000;
 
 type WalletContextValue = { address: string | null; chainId: number | null; connecting: boolean; error: string | null; connect: () => Promise<string>; disconnect: () => void };
 const WalletContext = createContext<WalletContextValue | null>(null);
@@ -31,9 +33,23 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const disconnect = useCallback(() => { setAddress(null); setChainId(null); localStorage.removeItem('palinode.wallet.address'); }, []);
   useEffect(() => {
-    if (!window.ethereum) return;
-    void window.ethereum.request({ method: 'eth_chainId' }).then((value) => setChainId(Number.parseInt(String(value), 16))).catch(() => undefined);
-  }, [address]);
+    const provider = window.ethereum;
+    if (!provider) return;
+    const updateChain = (value: unknown) => setChainId(Number.parseInt(String(value), 16));
+    const updateAccounts = (value: unknown) => {
+      const next = Array.isArray(value) ? String(value[0] || '') : '';
+      setAddress(next || null);
+      if (next) localStorage.setItem('palinode.wallet.address', next);
+      else localStorage.removeItem('palinode.wallet.address');
+    };
+    void provider.request({ method: 'eth_chainId' }).then(updateChain).catch(() => undefined);
+    provider.on?.('chainChanged', updateChain);
+    provider.on?.('accountsChanged', updateAccounts);
+    return () => {
+      provider.removeListener?.('chainChanged', updateChain);
+      provider.removeListener?.('accountsChanged', updateAccounts);
+    };
+  }, []);
   return <WalletContext.Provider value={{ address, chainId, connecting, error, connect, disconnect }}>{children}</WalletContext.Provider>;
 }
 
@@ -43,16 +59,26 @@ export function useWallet() {
   return value;
 }
 
-type ProtocolContextValue = ProtocolSnapshot & { refresh: () => Promise<void> };
+type ProtocolContextValue = ProtocolSnapshot & { refresh: (force?: boolean) => Promise<void> };
 const ProtocolContext = createContext<ProtocolContextValue | null>(null);
 
 export function ProtocolProvider({ children }: { children: ReactNode }) {
   const [snapshot, setSnapshot] = useState<ProtocolSnapshot>(EMPTY_SNAPSHOT);
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (force = false) => {
     setSnapshot((current) => ({ ...current, loading: true, error: null }));
+    if (!force) {
+      try {
+        const cached = JSON.parse(sessionStorage.getItem(SNAPSHOT_CACHE_KEY) || 'null') as { savedAt?: number; data?: Omit<ProtocolSnapshot, 'loading' | 'error' | 'refreshedAt'> } | null;
+        if (cached?.savedAt && cached.data && Date.now() - cached.savedAt < SNAPSHOT_CACHE_TTL_MS) {
+          setSnapshot({ ...cached.data, loading: false, error: null, refreshedAt: cached.savedAt });
+          return;
+        }
+      } catch { sessionStorage.removeItem(SNAPSHOT_CACHE_KEY); }
+    } else sessionStorage.removeItem(SNAPSHOT_CACHE_KEY);
     try {
       const client = createClient({ chain: studionet, endpoint: RPC_URL });
       const data = await loadSnapshot(client);
+      try { sessionStorage.setItem(SNAPSHOT_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), data })); } catch { /* bounded cache is optional */ }
       setSnapshot({ ...data, loading: false, error: null, refreshedAt: Date.now() });
     } catch (reason) {
       setSnapshot((current) => ({ ...current, loading: false, error: reason instanceof Error ? reason.message : 'The canonical read surface is unavailable.' }));

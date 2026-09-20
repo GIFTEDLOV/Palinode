@@ -9,7 +9,7 @@ import type { CalldataEncodable } from 'genlayer-js/types';
 export function StatusPill({ value, label }: { value?: string; label?: string }) { return <span className={statusClass(value)}>{label || formatStatus(value)}</span>; }
 export function CopyButton({ value, compact = false }: { value: string; compact?: boolean }) {
   const [copied, setCopied] = useState(false);
-  return <button className={compact ? 'copy-button compact' : 'copy-button'} title="Copy value" onClick={() => { void navigator.clipboard.writeText(value).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1200); }); }}>{copied ? 'COPIED' : compact ? '⧉' : 'COPY'}</button>;
+  return <button type="button" aria-label={`Copy ${value}`} className={compact ? 'copy-button compact' : 'copy-button'} title="Copy value" onClick={() => { void navigator.clipboard.writeText(value).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1200); }); }}>{copied ? 'COPIED' : compact ? '⧉' : 'COPY'}</button>;
 }
 export function Kicker({ children }: { children: React.ReactNode }) { return <div className="kicker">{children}</div>; }
 export function SectionTitle({ eyebrow, title, action }: { eyebrow?: string; title: string; action?: React.ReactNode }) { return <div className="section-title"><div>{eyebrow && <Kicker>{eyebrow}</Kicker>}<h2>{title}</h2></div>{action}</div>; }
@@ -23,7 +23,7 @@ export function NodeBadge({ node }: { node: NodeRecord }) { return <span classNa
 function navClass({ isActive }: { isActive: boolean }) { return isActive ? 'nav-link active' : 'nav-link'; }
 
 export function AppShell() {
-  const { address, connecting, connect, disconnect, error: walletError } = useWallet();
+  const { address, chainId, connecting, connect, disconnect, error: walletError } = useWallet();
   const { nodes, revocations, recoveries, loading, error, refresh } = useProtocol();
   const { transactions, drawerOpen, setDrawerOpen } = useTransactions();
   const location = useLocation();
@@ -31,7 +31,7 @@ export function AppShell() {
   return <div className="app-frame">
     <header className="topbar">
       <Link className="brand" to="/"><span className="brand-mark">P</span><span>PALINODE</span><small>REVOCATION GRAPH</small></Link>
-      <div className="topbar-right"><span className="network-chip"><i />{NETWORK} / {CHAIN_ID}</span><button className="wallet-button" onClick={address ? disconnect : () => void connect()}>{connecting ? 'CONNECTING…' : address ? truncate(address) : 'CONNECT WALLET'}</button><button className="icon-button" aria-label="Open transaction drawer" onClick={() => setDrawerOpen(true)}>◌<b>{activeTx.length || ''}</b></button></div>
+      <div className="topbar-right"><span className={`network-chip ${address && chainId !== CHAIN_ID ? 'wrong-network' : ''}`}><i />{address && chainId !== CHAIN_ID ? 'WRONG NETWORK' : `${NETWORK} / ${CHAIN_ID}`}</span><button className="wallet-button" onClick={address ? disconnect : () => void connect()}>{connecting ? 'CONNECTING…' : address ? truncate(address) : 'CONNECT WALLET'}</button><button className="icon-button" aria-label="Open transaction drawer" onClick={() => setDrawerOpen(true)}>◌<b>{activeTx.length || ''}</b></button></div>
     </header>
     <div className="app-layout">
       <aside className="sidebar">
@@ -53,7 +53,7 @@ export function AppShell() {
       </aside>
       <main className="main-content">
         {walletError && <div className="inline-alert warning">{walletError}</div>}
-        {error && !loading && <ErrorState message={error} retry={() => void refresh()} />}
+        {error && !loading && <ErrorState message={error} retry={() => void refresh(true)} />}
         {location.pathname.startsWith('/app') && <div className="breadcrumb"><span>PALINODE</span><b>/</b><span>{location.pathname.split('/').filter(Boolean).slice(1).join(' / ') || 'overview'}</span>{loading && <em>SYNCING CANONICAL STATE…</em>}</div>}
         <Outlet />
       </main>
@@ -64,7 +64,7 @@ export function AppShell() {
 
 export function TransactionDrawer({ onClose }: { onClose: () => void }) {
   const { transactions } = useTransactions();
-  return <div className="drawer-backdrop" onClick={onClose}><aside className="transaction-drawer" onClick={(event) => event.stopPropagation()}><div className="drawer-header"><div><Kicker>FINALITY TRACKER</Kicker><h2>Transactions</h2></div><button className="icon-button" onClick={onClose}>×</button></div>{transactions.length === 0 ? <EmptyState title="No tracked transactions" body="Writes submitted from this browser will persist here and resume by ID after refresh." /> : <div className="tx-list">{transactions.map((tx) => <TransactionItem key={tx.id} tx={tx} />)}</div>}</aside></div>;
+  return <div className="drawer-backdrop" onClick={onClose}><aside className="transaction-drawer" aria-label="Transaction drawer" onClick={(event) => event.stopPropagation()}><div className="drawer-header"><div><Kicker>FINALITY TRACKER</Kicker><h2>Transactions</h2></div><button className="icon-button" aria-label="Close transaction drawer" onClick={onClose}>×</button></div>{transactions.length === 0 ? <EmptyState title="No tracked transactions" body="Writes submitted from this browser will persist here and resume by ID after refresh." /> : <div className="tx-list">{transactions.map((tx) => <TransactionItem key={tx.id} tx={tx} />)}</div>}</aside></div>;
 }
 
 function TransactionItem({ tx }: { tx: import('./types').TrackedTransaction }) { return <div className="tx-item"><div className="tx-item-head"><strong>{tx.label}</strong><StatusPill value={tx.phase} /></div><div className="tx-method">{tx.method}</div><div className="tx-id mono">{truncate(tx.id, 14, 10)} <CopyButton value={tx.id} compact /></div><div className="tx-progress"><span className={tx.phase.includes('FINALIZED SUCCESS') ? 'done' : tx.phase.includes('ERROR') || tx.phase === 'UNDETERMINED' ? 'bad' : 'current'} /></div><div className="tx-meta"><span>{tx.protocolStatus}</span><span>{tx.executionResult}</span><span>{formatDate(tx.updatedAt)}</span></div>{tx.error && <div className="tx-error">{tx.error}</div>}</div>; }
@@ -72,13 +72,13 @@ function TransactionItem({ tx }: { tx: import('./types').TrackedTransaction }) {
 export function LiveContractStrip() { return <div className="live-strip"><span className="live-dot" /> LIVE CANONICAL STATE <span className="strip-divider" /> {NETWORK} <span className="strip-divider" /> <span className="mono">{truncate(CONTRACT_ADDRESS, 10, 8)}</span> <span className="strip-divider" /> <span className="mono">SHA {truncate(CONTRACT_SHA256, 8, 6)}</span></div>; }
 
 export function WriteAction({ label, method, args, children, className = 'button button-primary', onSubmitted }: { label: string; method: string; args: CalldataEncodable[]; children: React.ReactNode; className?: string; onSubmitted?: () => void }) {
-  const { address, connect } = useWallet();
+  const { address, chainId, connect } = useWallet();
   const { submit, setDrawerOpen } = useTransactions();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const run = async () => {
     setBusy(true); setError(null);
-    try { const connectedAddress = address || await connect(); if (!connectedAddress) throw new Error('Connect a wallet before sending a write.'); await submit(label, method, args, connectedAddress); onSubmitted?.(); setDrawerOpen(true); }
+    try { const connectedAddress = address || await connect(); if (!connectedAddress) throw new Error('Connect a wallet before sending a write.'); if (chainId !== null && chainId !== CHAIN_ID) throw new Error(`Switch wallet to ${NETWORK} (chain ${CHAIN_ID}) before sending a write.`); await submit(label, method, args, connectedAddress); onSubmitted?.(); setDrawerOpen(true); }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Write was not submitted.'); }
     finally { setBusy(false); }
   };

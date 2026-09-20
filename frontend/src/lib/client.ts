@@ -2,11 +2,15 @@ import { createClient } from 'genlayer-js';
 import { studionet } from 'genlayer-js/chains';
 import { TransactionHashVariant } from 'genlayer-js/types';
 import type { CalldataEncodable, GenLayerClient } from 'genlayer-js/types';
-import { CHAIN_ID, CONTRACT_ADDRESS, PAGE_SIZE, POLL_INTERVAL_MS, RPC_URL } from '../config';
+import { CHAIN_ID, CONTRACT_ADDRESS, PAGE_SIZE, POLL_INTERVAL_MS, RPC_URL, STUDIONET_RPC_URL } from '../config';
 import type { EdgeRecord, NodeRecord, Page, RawRecord, RevocationCase, AuthorityRecord, RecoveryCase, TrackedTransaction, LifecyclePhase } from '../types';
 import { asRecord, pageMeta, pageSlots } from './utils';
 
-export type BrowserProvider = { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> };
+export type BrowserProvider = {
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  on?: (event: string, listener: (...args: unknown[]) => void) => void;
+  removeListener?: (event: string, listener: (...args: unknown[]) => void) => void;
+};
 declare global { interface Window { ethereum?: BrowserProvider } }
 
 export function publicClient(): GenLayerClient<typeof studionet> {
@@ -25,7 +29,7 @@ export async function connectWallet() {
     try {
       await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: chainHex }] });
     } catch {
-      await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{ chainId: chainHex, chainName: 'GenLayer Studionet', rpcUrls: [RPC_URL], nativeCurrency: { name: 'GEN', symbol: 'GEN', decimals: 18 } }] });
+      await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{ chainId: chainHex, chainName: 'GenLayer Studionet', rpcUrls: [STUDIONET_RPC_URL], nativeCurrency: { name: 'GEN', symbol: 'GEN', decimals: 18 } }] });
     }
   }
   const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });

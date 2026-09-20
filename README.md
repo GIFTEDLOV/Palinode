@@ -17,7 +17,7 @@ itself retrieve and contextualize mutable, unstructured evidence. An ordinary
 backend can perform that semantic work, but its answer is controlled by one
 operator and is not an adversarially shared GenLayer consensus outcome.
 
-## Phase 3 status
+## Release status
 
 This phase contains one canonical Intelligent Contract at
 [contracts/palinode.py](contracts/palinode.py). The derived application lives
@@ -180,13 +180,31 @@ npm test
 npm run lint
 npm run build
 npm run dev
+npm run browser-qa
 ```
 
 Wallet connection is optional for read-only exploration; write actions require
 a compatible wallet on Studionet. The controlled static fixture at
 `https://palinode-fixture.vercel.app` remains separate from the application.
 The production frontend is deployed at
-`https://palinode-app.vercel.app`.
+`https://palinode-app.vercel.app`. Browser reads use a narrow same-origin
+`/api/rpc` relay because the public Studionet RPC does not expose browser CORS;
+the relay forwards only to `https://studio.genlayer.com/api` and never becomes
+canonical state.
+
+The application routes are organized around the protocol lifecycle: overview,
+global graph, evidence and decision records, revocation and recovery command
+centers, authorities, activity, Proof & Security, integration guidance, and
+protocol docs. The graph, blast-radius views, authentication/reliance split,
+immutable notice identity, active causes, and successor recovery read the
+bounded contract model rather than a frontend database.
+
+The release browser pass used Playwright against the local production build and
+the production alias across desktop, tablet, and mobile viewports. It covered
+94 production route/viewport assertions with zero console errors. Wallet QA
+uses a synthetic provider for safe browser behavior checks; signing with a
+real wallet remains an operator action and no test writes were broadcast by
+the release pass.
 
 ## Development commands
 
@@ -251,6 +269,10 @@ automatically resubmits them.
 - No legal, regulatory, or factual truth guarantee is implied by a semantic
   verdict; PALINODE records a bounded adjudication of registered dependency
   impact.
+- The frontend cannot provide a real signature or account-funding test without
+  an operator wallet extension. It handles disconnected, wrong-network,
+  account-change, and disconnect states, but the release QA does not claim a
+  live wallet signature was made.
 
 See the [documentation index](docs/ARCHITECTURE.md) for the complete protocol
 model.

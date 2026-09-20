@@ -1,0 +1,9 @@
+{
+  "name": "PALINODE / Semantic Revocation Graph",
+  "short_name": "PALINODE",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0d0f",
+  "theme_color": "#0b0d0f",
+  "description": "Forensic infrastructure for evidence-dependent decisions."
+}

@@ -1,6 +1,7 @@
 export const NETWORK = 'Studionet';
 export const CHAIN_ID = 61999;
-export const RPC_URL = 'https://studio.genlayer.com/api';
+export const STUDIONET_RPC_URL = 'https://studio.genlayer.com/api';
+export const RPC_URL = import.meta.env.VITE_GENLAYER_RPC_URL || '/api/rpc';
 export const CONTRACT_ADDRESS = '0x9c9d1993cd938846D1163Bba9AA81AC6d165de88' as const;
 export const CONTRACT_SHA256 = 'bd5e981605f2533bd5354a4e884288d585020514d4be9eaabd9cdb4ff39d4c06';
 export const FREEZE_COMMIT = '4a18242600218914ef4fa5de441bebd385967a1b';
