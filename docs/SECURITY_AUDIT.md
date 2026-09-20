@@ -35,6 +35,7 @@ killed 27/27 targeted mutants with no survivors.
 | Recovery retry telemetry could grow without bound | Medium | Yes | Eight-entry ring plus monotonic counter; retry does not consume conclusive attempt budget | `test_recovery_history_and_retry_storage_remain_bounded` |
 | Local GLSim failure could be misreported as hosted network proof | High | No protocol exploit; evidence-quality risk | One clean isolated reproduction; record `KNOWN_LOCAL_BLOCKER`; continue only with hosted Studionet gate | `tests/integration/test_glsim_network.py`, isolated venv run |
 | Controlled authority fixture was absent for live proof | High | Would force unsafe test weakening | Deployed fictional static fixture and verified exact public bytes; well-known declaration binds the resolved public address | fixture manifest and remote byte parity checks |
+| A 64-slot active-cause set could reject a later stronger finding and suppress its impact | Critical | Yes: a 65th material/invalidating case could revert before recording or escalating its cause | Added a bounded monotonic overflow summary with count, strongest severity, latest strongest case, and rolling commitment; named recovery cannot clear the summary | `test_65th_stronger_cause_is_retained_as_monotonic_overflow_safety_lock` and three active-cause mutation guards |
 
 No Studionet contract deployment was attempted because the resolved public
 deployer address was unfunded. This is an external pre-broadcast gate, not a

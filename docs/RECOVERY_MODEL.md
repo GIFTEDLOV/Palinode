@@ -56,9 +56,17 @@ ring plus a monotonic counter.
 ## Active causes
 
 Every material revocation case that affects a node creates a distinct
-`node_id|case_id` cause with its typed severity. A node stores at most 64 active
-cause slots; this bounds per-node execution while preserving historical case
-records. The current reliance state is the maximum active ordinary severity:
+`node_id|case_id` cause with its typed severity. A node stores at most 64 named
+active cause slots; this bounds per-node execution while preserving historical
+case records. The slot limit is not allowed to suppress a later finding: when
+the slots are full, additional causes are retained in a monotonic overflow
+summary containing a count, strongest severity, latest strongest case ID, and
+rolling commitment. The overflow summary is a conservative safety lock; named
+slot recovery cannot clear it, so the node cannot become safer than the
+recorded causes justify. This is exposed by `get_active_causes` and keeps
+recovery accounting fail-closed at the boundary.
+
+The current reliance state is the maximum active ordinary severity:
 
 ```text
 QUESTIONED < UNDER_REVIEW < QUARANTINED < INVALIDATED

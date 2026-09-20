@@ -150,6 +150,41 @@ def test_operation_after_former_node_cap_remains_possible(direct_deploy):
     assert contract.get_node_record(page["slot_0"])["title"] == "Node 4096"
 
 
+def test_65th_stronger_cause_is_retained_as_monotonic_overflow_safety_lock(direct_deploy):
+    """A full slot set must not suppress a later, stronger adverse finding."""
+    contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
+    node_id = contract.register_claim("cause-capacity", "Cause capacity boundary")
+    cause_ids = [format(index, "064x") for index in range(1, 65)]
+    for case_id in cause_ids:
+        contract._apply_impact_status(node_id, "QUESTIONED", "BOUNDARY_TEST", case_id)
+
+    full = contract.get_active_causes(node_id)
+    assert full["active_count"] == "64"
+    assert full["slot_count"] == "64"
+    assert full["overflow_count"] == "0"
+
+    stronger_case_id = format(65, "064x")
+    contract._apply_impact_status(node_id, "INVALIDATED", "BOUNDARY_TEST", stronger_case_id)
+
+    after_overflow = contract.get_active_causes(node_id)
+    assert contract.get_node_record(node_id)["status"] == "INVALIDATED"
+    assert after_overflow["active_count"] == "64"
+    assert after_overflow["overflow_count"] == "1"
+    assert after_overflow["overflow_severity"] == "INVALIDATED"
+    assert after_overflow["overflow_latest_case"] == stronger_case_id
+    assert len(after_overflow["overflow_commitment"]) == 64
+
+    # Resolving every individually named slot must not clear the unresolvable
+    # overflow safety summary or downgrade the node.
+    for index, case_id in enumerate(cause_ids, start=1000):
+        contract._resolve_active_cause(node_id, case_id, format(index, "064x"), "REINSTATE")
+    final_state = contract.get_active_causes(node_id)
+    assert final_state["active_count"] == "0"
+    assert final_state["overflow_count"] == "1"
+    assert final_state["overflow_severity"] == "INVALIDATED"
+    assert contract.get_node_record(node_id)["status"] == "INVALIDATED"
+
+
 def test_recovery_requires_cleared_linked_successor_and_is_permissionless(direct_vm, direct_deploy):
     contract, _, notice_authority, old_id, successor_id, _, old_body, _ = setup_recovery(direct_vm, direct_deploy)
     case_id, _, _ = open_material_case(contract, direct_vm, notice_authority, old_id, old_body, "precondition")

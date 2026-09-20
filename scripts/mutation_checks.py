@@ -190,6 +190,24 @@ MUTATIONS = (
         "True",
         "tests/adversarial/test_capacity_and_recovery.py::test_recovery_processing_is_bounded_resumable_and_idempotent",
     ),
+    Mutation(
+        "active_cause_overflow_handling",
+        "if len(causes) >= MAX_ACTIVE_CAUSES_PER_NODE:",
+        "if False:",
+        "tests/adversarial/test_capacity_and_recovery.py::test_65th_stronger_cause_is_retained_as_monotonic_overflow_safety_lock",
+    ),
+    Mutation(
+        "active_cause_overflow_severity_retention",
+        "self.node_overflow_cause_severity[node_id] = target_status",
+        "self.node_overflow_cause_severity[node_id] = \"\"",
+        "tests/adversarial/test_capacity_and_recovery.py::test_65th_stronger_cause_is_retained_as_monotonic_overflow_safety_lock",
+    ),
+    Mutation(
+        "active_cause_overflow_safety_lock",
+        'if overflow != "" and (highest == "" or self._ordinary_severity(overflow) > self._ordinary_severity(highest)):',
+        "if False:",
+        "tests/adversarial/test_capacity_and_recovery.py::test_65th_stronger_cause_is_retained_as_monotonic_overflow_safety_lock",
+    ),
 )
 
 

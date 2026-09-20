@@ -50,10 +50,18 @@ step cannot erase or rewrite any prior state.
 Each material revocation case contributes a separate active cause to the root
 and to every descendant it actually affects. Causes are stored in a fixed
 64-slot per-node active set; old causes are resolved in place while historical
-case and status records remain permanent. `REINSTATE` removes only the named
-case cause, and `SUPERSEDE` removes only that cause while leaving a distinct
-`SUPERSEDED` lineage status when no stronger cause remains. If another case's
-cause remains, the highest active severity still determines current reliance.
+case and status records remain permanent. A 65th (or later) cause is not
+discarded or rejected after it has reached the node: a bounded monotonic
+overflow summary retains the number of overflow causes, their strongest
+severity, the latest case carrying that strongest severity, and a rolling
+commitment over all overflow entries. The summary is deliberately a
+non-recoverable safety lock until a future individually-addressable overflow
+design is introduced. Consequently, resolving all 64 named slots cannot
+downgrade a node while overflow adverse impact remains. `REINSTATE` removes
+only the named case cause, and `SUPERSEDE` removes only that cause while
+leaving a distinct `SUPERSEDED` lineage status when no stronger cause remains.
+If another case's cause or the overflow summary remains, the highest active
+severity still determines current reliance.
 
 Recovery uses `recovery_queue`, `recovery_cursor`, and
 `MAX_RECOVERY_STEPS_PER_CALL=32`. It cannot consume or mutate a revocation

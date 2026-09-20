@@ -1374,6 +1374,17 @@ class Palinode(gl.Contract):
     # recovery may resolve only the cause it proves corrected.
     node_active_cause_ids: TreeMap[str, DynArray[str]]
     node_active_cause_effect: TreeMap[str, str]
+    # The 64-slot active-cause set is an execution/storage bound, not a
+    # protocol-wide safety bound.  Once slots are full, additional causes are
+    # retained in this monotonic conservative summary instead of being
+    # rejected or silently dropped.  The summary is deliberately not
+    # individually recoverable: until a future bounded cause-commitment
+    # mechanism exists, it is a safety lock rather than a false claim that a
+    # particular overflow cause was resolved.
+    node_overflow_cause_count: TreeMap[str, u256]
+    node_overflow_cause_severity: TreeMap[str, str]
+    node_overflow_cause_latest_case: TreeMap[str, str]
+    node_overflow_cause_commitment: TreeMap[str, str]
     evidence_mirrors: TreeMap[str, DynArray[str]]
     evidence_mirror_identity: TreeMap[str, bool]
     evidence_identity_to_id: TreeMap[str, str]
@@ -1603,6 +1614,10 @@ class Palinode(gl.Contract):
         self.node_assessment_history_cursor[node_id] = u256(0)
         self.node_assessment_history_total[node_id] = u256(0)
         self.node_active_cause_ids.get_or_insert_default(node_id)
+        self.node_overflow_cause_count[node_id] = u256(0)
+        self.node_overflow_cause_severity[node_id] = ""
+        self.node_overflow_cause_latest_case[node_id] = ""
+        self.node_overflow_cause_commitment[node_id] = ""
         self.evidence_mirrors.get_or_insert_default(node_id)
         self.outgoing_count[node_id] = u256(0)
         self.incoming_count[node_id] = u256(0)
@@ -2405,7 +2420,27 @@ class Palinode(gl.Contract):
                 if self._ordinary_severity(target_status) > self._ordinary_severity(previous):
                     self.node_active_cause_effect[cause_key] = target_status
                 return
-        self._require(len(causes) < MAX_ACTIVE_CAUSES_PER_NODE, "active cause capacity reached")
+        if len(causes) >= MAX_ACTIVE_CAUSES_PER_NODE:
+            # Preserve the strongest overflow impact and a rolling commitment
+            # to every additional cause.  This is conservative by design: a
+            # later recovery cannot clear an overflow summary it cannot name.
+            previous_overflow = self.node_overflow_cause_severity[node_id]
+            if previous_overflow == "" or self._ordinary_severity(target_status) > self._ordinary_severity(previous_overflow):
+                self.node_overflow_cause_severity[node_id] = target_status
+                self.node_overflow_cause_latest_case[node_id] = case_id
+            previous_commitment = self.node_overflow_cause_commitment[node_id]
+            self.node_overflow_cause_commitment[node_id] = _sha256_text(
+                "palinode/overflow-cause/v1|"
+                + node_id
+                + "|"
+                + previous_commitment
+                + "|"
+                + case_id
+                + "|"
+                + target_status
+            )
+            self.node_overflow_cause_count[node_id] = self.node_overflow_cause_count[node_id] + u256(1)
+            return
         causes.append(case_id)
         self.node_active_cause_effect[cause_key] = target_status
 
@@ -2419,6 +2454,9 @@ class Palinode(gl.Contract):
             effect = self.node_active_cause_effect[node_id + "|" + case_id]
             if highest == "" or self._ordinary_severity(effect) > self._ordinary_severity(highest):
                 highest = effect
+        overflow = self.node_overflow_cause_severity[node_id]
+        if overflow != "" and (highest == "" or self._ordinary_severity(overflow) > self._ordinary_severity(highest)):
+            highest = overflow
         return highest
 
     def _recompute_node_from_causes(self, node_id: str, reason_code: str, recovery_case_id: str) -> None:
@@ -3025,6 +3063,10 @@ class Palinode(gl.Contract):
         result: dict[str, str] = {
             "active_count": "0",
             "slot_count": str(len(causes)),
+            "overflow_count": str(self.node_overflow_cause_count[node_id]),
+            "overflow_severity": self.node_overflow_cause_severity[node_id],
+            "overflow_latest_case": self.node_overflow_cause_latest_case[node_id],
+            "overflow_commitment": self.node_overflow_cause_commitment[node_id],
         }
         count = 0
         for index in range(len(causes)):
