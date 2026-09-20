@@ -34,7 +34,9 @@ explicit infrastructure outcomes, and no equivalence over free-form prose.
 boundary for a smaller deterministic challenge result. Both sides retrieve the
 derived `/.well-known/palinode.json` URL and require exact binding of the
 registering address, normalized origin, nonce, policy, and Palinode version.
-The caller cannot choose the leader, validators, or any reviewer set.
+Authority rotation uses the same check against the canonical origin to create a
+new version; the old controller is not sufficient to impersonate it. The
+caller cannot choose the leader, validators, or any reviewer set.
 
 ## Result and post-consensus mutation
 
@@ -65,8 +67,9 @@ consensus disagreement. It never silently becomes a semantic verdict.
 
 Evidence retrieval failure commits assessment `SOURCE_UNAVAILABLE`, not
 `CLEARED`, `REJECTED`, or semantic `INCONCLUSIVE`. The permissionless retry
-path can first consensus-verify same-authority mirror bytes against the locked
-digest and length; only then can reassessment use the mirror location.
+path can first consensus-verify cross-origin mirror bytes against the locked
+digest and length; only then can reassessment use the mirror location. A mirror
+has no authority semantics.
 
 ## Finality
 

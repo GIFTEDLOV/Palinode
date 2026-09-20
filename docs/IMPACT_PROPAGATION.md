@@ -31,6 +31,13 @@ queue. A completed case returns zero on repeated processing and cannot be
 processed forever. Queue keys include the case ID, so one case cannot consume
 or mutate another case's queue.
 
+The current reliance composition is a monotonic severity lattice for ordinary
+revocation causes: `QUESTIONED < UNDER_REVIEW < QUARANTINED < INVALIDATED`.
+`ACTIVE`, `REINSTATED`, and `INCONCLUSIVE` are the zero-severity baseline;
+`SUPERSEDED` is lineage-specific. A weaker later case is a no-op. Only an
+explicit successor/recovery path can resolve a stronger cause; an immaterial
+case never restores reliance.
+
 ## Idempotence and stronger prior state
 
 Queue entries are deduplicated. A node already at an equal or stronger current

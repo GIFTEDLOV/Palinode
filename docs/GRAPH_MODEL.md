@@ -54,6 +54,12 @@ The table is applied to the edge currently being processed. A child is marked
 once per case, and its outgoing edges are then queued. Existing stronger status
 from another case is never downgraded by a weaker effect.
 
+There is no implicit relationship fallback: a relationship outside the seven
+listed values is rejected before queue processing. `CORROBORATES` and
+`CONTRADICTS` intentionally have no automatic child effect for either root
+effect; their existence remains inspectable for a later, separately reasoned
+review.
+
 ## Bounded work queue
 
 Each material case owns a queue of edge IDs and a monotonic cursor. Assessment

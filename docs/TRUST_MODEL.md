@@ -32,7 +32,8 @@ Authority-backed evidence and notices require a verified authority ID. The
 authority is bound to the registering address and normalized HTTPS origin by a
 consensus-checked `/.well-known/palinode.json` challenge. A caller cannot label
 an arbitrary origin as authoritative, select the validators, or choose the
-semantic decision-makers for its own case.
+semantic decision-makers for its own case. Authority IDs have versioned
+controllers and explicit `ACTIVE`/`REVOKED` lifecycle.
 
 There is no owner, administrator, pause authority, arbitrary status setter, or
 verdict override in Phase 1. Capacity constants and enums are code-level
@@ -58,7 +59,8 @@ Registration and assessment are separate: a new node is `UNASSESSED`, not
 consensus-cleared. `get_node_record` exposes `assessment_status` and `status`
 simultaneously. `SOURCE_UNAVAILABLE` is an explicit liveness state, not a
 semantic rejection or clearance. Any caller may retry through digest-verified
-same-authority mirrors without changing the locked evidence identity.
+cross-origin retrieval mirrors without changing the locked evidence identity.
+Mirrors are not authority records and cannot clear an object by themselves.
 
 ## Finality boundary
 
@@ -67,5 +69,6 @@ wait for the GenLayer Intelligent Contract transaction to reach its applicable
 final status before treating a semantic result or propagation mutation as
 final. `ACCEPTED` is tracked separately from execution success and finalization.
 The application layer must persist the transaction ID and resume polling it
-after timeouts rather than resubmitting automatically. This repository does
-not deploy or call Studionet in Phase 1.
+after timeouts rather than resubmitting automatically. This repository has not
+deployed or called Studionet in Phase 2: the canary is gated until local
+integration and a controlled live authority fixture are available.

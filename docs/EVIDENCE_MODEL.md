@@ -76,10 +76,14 @@ HTTPS origin and the fixed `WELL_KNOWN_ADDRESS_NONCE_V1` policy. Consensus
 retrieves the derived `/.well-known/palinode.json` document and requires the
 exact Palinode version, authority address, canonical origin, nonce, and policy.
 Evidence registration then requires a verified authority ID and a source URI
-whose normalized origin is exactly that authority origin.
+whose normalized origin is exactly that authority origin. Authority IDs have
+versioned controller/origin records with explicit `ACTIVE` or `REVOKED` state.
 
-The authority registry is immutable in v1; there is no owner override, erase,
-or arbitrary authority reassignment.
+Rotation is a new version proved by the canonical origin's declaration; it does
+not require trusting a compromised old controller and does not rewrite old
+evidence. Revocation lowers trust for new evidence and assessments while
+historical records remain inspectable. There is no owner override, erase, or
+arbitrary authority reassignment.
 
 ## Mutable URLs
 
@@ -92,8 +96,9 @@ provided as context for adjudication rather than silently rewritten into state.
 If the committed URL is unavailable, the assessment state becomes
 `SOURCE_UNAVAILABLE` and any caller may invoke the retry path. A mirror is
 usable only when its retrieved bytes match the locked SHA-256 and exact byte
-length under the same registered authority origin. The original URI, authority,
-digest, and byte length are never rewritten.
+length. A mirror may be cross-origin, but it is retrieval-only and never gains
+source-authority semantics. The original URI, authority/version, digest, and
+byte length are never rewritten.
 
 ## Replacement and succession
 

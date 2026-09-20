@@ -30,6 +30,22 @@ The state dimensions are intentionally separate:
   error; and
 - `finality_state`: appeal window open, finalized, or overturned/restarted.
 
+The reusable helper in `scripts/transaction_lifecycle.py` normalizes the
+application-facing states:
+
+```text
+SUBMITTED -> PENDING/PROPOSING/COMMITTING/REVEALING
+           -> ACCEPTED_PROVISIONAL -> APPEAL_STATE
+           -> FINALIZATION_ACTION_AVAILABLE -> FINALIZED_SUCCESS
+                                               or FINALIZED_ERROR
+```
+
+Unknown or timeout conditions are represented as `UNDETERMINED` or
+`TIMEOUT_CANCELED`. `FINALIZED_SUCCESS` requires both an appropriate finalized
+consensus state and a successful execution result. `ACCEPTED_PROVISIONAL`
+alone is never application success. The tracker persists and resumes the same
+transaction ID and never resubmits automatically.
+
 After a timeout or browser restart, the client resumes polling the persisted
 `transaction_id`. It must not automatically submit the same PALINODE write
 again, because doing so could create a second authority, challenge, retry, or

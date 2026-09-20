@@ -17,17 +17,19 @@ becoming an accidental source of truth while the invariants are being proven.
 The contract has three layers:
 
 1. Deterministic registration and validation: canonical IDs, immutable metadata,
-   strict input bounds, node sequencing, typed edges, and duplicate policy.
+   strict input bounds, node sequencing, typed edges, duplicate policy, and
+   versioned source-authority lifecycle.
 2. Isolated semantic adjudication: bounded HTTPS retrieval and a constrained
-   LLM result inside `gl.vm.run_nondet_unsafe`.
+   LLM result inside `gl.vm.run_nondet_unsafe`; pure evidence authentication
+   uses deterministic digest/length comparison without an LLM.
 3. Deterministic consequences: result persistence, separate assessment and
    reliance transitions, root impact, and resumable edge-by-edge propagation.
 
-Source-authority registration is also a bounded consensus boundary: the
+Source-authority registration and rotation are bounded consensus boundaries: the
 registering address and normalized HTTPS origin are committed only after the
 derived `/.well-known/palinode.json` challenge binds address, origin, nonce,
-and policy. Evidence and notices reference verified authorities; callers do not
-choose validators.
+   and policy. Evidence and notices reference verified, active authorities;
+   callers do not choose validators.
 
 ## State ownership
 

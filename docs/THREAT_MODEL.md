@@ -25,9 +25,11 @@ verification policy. Evidence and notices must reference that verified
 authority, and normalized URIs must remain under its origin. Wrong-origin URLs,
 unregistered authority IDs, wrong nonces, and wrong address bindings fail.
 
-The registry has no owner override or authority rewrite path. Authority policy
-rotation and revocation are explicit future protocol work, not hidden caller
-claims.
+The registry has no owner override or authority rewrite path. Authority
+rotation creates a new version only after a current canonical-origin
+declaration proves the new controller; the old controller cannot impersonate
+the new version. Explicit revocation lowers current trust without rewriting
+historical evidence.
 
 ## Replay and duplicate cases
 
@@ -55,10 +57,10 @@ rewritten, a cycle cannot be introduced through supported writes.
 
 ## Graph fan-out and denial of service
 
-Per-node incoming/outgoing limits, global node/edge limits, per-node transition
-limits, fetch-size limits, assessment retry limits, and a 32-edge propagation
-limit constrain resource use. The queue is resumable, so no transaction must
-traverse a full graph.
+Per-node incoming/outgoing limits, global node/edge limits, bounded recent
+history, fixed mirror counts, bounded retry telemetry, fetch-size limits,
+assessment attempt limits, and a 32-edge propagation limit constrain resource
+use. The queue is resumable, so no transaction must traverse a full graph.
 
 ## Unbounded propagation
 
@@ -85,11 +87,12 @@ reasons. They cannot become `MATERIAL` or `IMMATERIAL`.
 
 Committed evidence outage becomes the explicit node assessment state
 `SOURCE_UNAVAILABLE`, distinct from semantic `INCONCLUSIVE`. Any caller may
-retry. A same-authority mirror must pass independent consensus retrieval and
-exact byte-length/SHA-256 verification before it becomes a retrieval location;
-the original identity is never changed. A failed mirror leaves the locked case
-untouched, so outage cannot create either a false verdict or a permanent
-identity deadlock.
+retry. A cross-origin retrieval mirror must pass independent consensus
+retrieval and exact byte-length/SHA-256 verification before it becomes a
+retrieval location; it never gains source-authority semantics. The original
+identity is never changed. A failed mirror leaves the locked case untouched,
+so outage cannot create either a false verdict or a permanent identity
+deadlock.
 
 ## Fake replacement evidence
 

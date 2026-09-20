@@ -72,17 +72,18 @@ block and does not commit a semantic mutation. No failure path becomes
 ## Liveness and mirror recovery
 
 `SOURCE_UNAVAILABLE` is a node assessment state distinct from semantic
-`INCONCLUSIVE`. A caller may retry an `INCONCLUSIVE` case through
-`retry_revocation_case(case_id, evidence_mirror_uri, notice_mirror_uri)`.
+`INCONCLUSIVE`. A caller may retry an open or inconclusive case through
+`retry_revocation_case(case_id, evidence_mirror_id, notice_mirror_id)`.
 The original evidence and notice URI, authority, digest, and byte length are
-locked in the case. v1 permits mirror locations only under the same verified
-authority origin, and consensus independently retrieves both mirrors and
-checks exact bytes, SHA-256, and length before storing them as retrieval
-locations. A failed or mismatching mirror reverts without changing identity.
+locked in the case. Permissionless mirror candidates may be cross-origin, but
+consensus independently retrieves both mirrors and checks exact bytes,
+SHA-256, and length before storing a retrieval location. A failed or
+mismatching mirror reverts without changing identity or granting authority.
 Retryable infrastructure failures do not consume the eight conclusive/semantic
 assessment attempts, preventing source outage from becoming a permanent
-deadlock. Each retry transaction remains bounded and may be repeated by any
-caller.
+deadlock. Retry telemetry uses a monotonic counter and a fixed eight-entry ring,
+so repeated failure cannot grow storage without bound. Each retry transaction
+remains bounded and may be repeated by any caller.
 
 `assess_revocation` accepts only `case_id`; it reads the locked case identity
 and current verified retrieval locations. A caller cannot substitute a new
@@ -90,10 +91,11 @@ target evidence or notice during reassessment.
 
 ## Authority and reviewer safety
 
-Notice URLs must reference a verified source authority. The source authority
+Notice URLs must reference a verified, currently active source authority. The source authority
 registry uses a consensus-checked canonical
 `https://origin/.well-known/palinode.json` document binding the registering
-address, origin, policy, and nonce. Callers do not select validators or
+address, origin, policy, and nonce. A case locks the notice authority version
+and all content identity fields; reassessment accepts only `case_id`. Callers do not select validators or
 semantic decision-makers. GenLayer's assigned leader and validator committee
 remain authoritative for the semantic result; application owners have no
 suppression or override path.

@@ -18,9 +18,12 @@ the transition helper.
 | `REINSTATED` | `ACTIVE`, `QUESTIONED`, `UNDER_REVIEW`, `QUARANTINED`, `SUPERSEDED`, `INVALIDATED`, `INCONCLUSIVE` |
 | `INCONCLUSIVE` | `ACTIVE`, `QUESTIONED`, `UNDER_REVIEW`, `QUARANTINED`, `SUPERSEDED`, `INVALIDATED`, `REINSTATED` |
 
-Every transition appends a compact status-history record containing transition
-sequence, node ID, old status, new status, reason code, and case ID. Each node
-is limited to 16 transitions in Phase 1.
+Every transition increments a monotonic total counter and writes a compact
+status-history record containing transition sequence, node ID, old status, new
+status, reason code, and case ID into a fixed 16-slot recent-history ring.
+`get_status_history` exposes the total count and recent bounded slots. A node
+does not lose its lifetime ability to transition merely because history is
+full.
 
 ## Assessment status
 
@@ -41,8 +44,10 @@ Registration creates `UNASSESSED`/`ACTIVE`. Opening an adverse case creates
 `PENDING` without changing reliance. A conclusive immaterial result creates
 `CLEARED`; a material result creates `REJECTED`; semantic ambiguity creates
 `INCONCLUSIVE`; retrieval infrastructure failure creates
-`SOURCE_UNAVAILABLE`. Assessment transitions are append-only and separately
-bounded at 16 per node. The node view exposes both current dimensions and the
+`SOURCE_UNAVAILABLE`. Assessment transitions use the same fixed 16-slot
+recent-history ring and a monotonic total count. Repeated retryable source
+failures update bounded case telemetry rather than appending unbounded
+assessment history. The node view exposes both current dimensions and the
 assessment case ID.
 
 ## Revocation case status

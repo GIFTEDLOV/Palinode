@@ -12,12 +12,19 @@ PALINODE is intentionally not a generic AI classifier, ordinary provenance
 registry, simple fact-checker, dispute escrow, or backend database with a
 decentralization label. The Intelligent Contract is canonical.
 
-## Phase 1 status
+An ordinary smart contract can enforce the typed graph and hashes, but cannot
+itself retrieve and contextualize mutable, unstructured evidence. An ordinary
+backend can perform that semantic work, but its answer is controlled by one
+operator and is not an adversarially shared GenLayer consensus outcome.
 
-Phase 1 contains one canonical Intelligent Contract at
+## Phase 2 status
+
+This phase contains one canonical Intelligent Contract at
 [contracts/palinode.py](contracts/palinode.py). There is no frontend, indexer,
 deployment, ERC20 integration, cross-contract messaging, or GitHub repository
-in this phase.
+in this phase. The local security closure and integration harnesses are
+implemented; live authority validation and a Studionet canary remain gated on
+external fixtures and network tooling.
 
 The target is stable Studionet:
 
@@ -82,7 +89,9 @@ clearance from current reliance.
 
 1. An authority registers a canonical HTTPS origin and proves control by a
    consensus-checked `/.well-known/palinode.json` document binding the origin,
-   caller address, policy, and nonce.
+   caller address, policy, and nonce. Authorities have a stable ID and
+   versioned `ACTIVE`/`REVOKED` lifecycle; rotation creates a new version and
+   never rewrites historical evidence.
 2. A caller registers evidence or a non-evidence node. Evidence must reference
    a verified authority whose origin contains the normalized source URI.
    Registration is permissionless and generates the canonical ID on-chain.
@@ -94,9 +103,11 @@ clearance from current reliance.
    callers cannot substitute another evidence or notice URL.
 6. If retrieval is unavailable, the node becomes `SOURCE_UNAVAILABLE`, not
    semantically cleared or rejected. Any caller may use
-   `retry_revocation_case(case_id, evidence_mirror_uri, notice_mirror_uri)`;
-   mirrors are accepted only after consensus-checked digest and byte-length
-   equality, and the original identity remains unchanged.
+   `retry_revocation_case(case_id, evidence_mirror_id, notice_mirror_id)`;
+   permissionless mirrors may come from independent HTTPS origins, but are
+   accepted only after consensus-checked digest and byte-length equality. A
+   mirror is retrieval-only and cannot change canonical identity or clear an
+   object.
 7. Deterministic code records the consensus result and applies the root effect.
 8. `process_impact(case_id, max_steps)` resumes bounded edge propagation until
    the case is complete.
@@ -134,32 +145,43 @@ $env:GENVM_VERSION = "v0.2.16"
 $env:PATH = "$PWD\.venv\Scripts;$env:PATH"
 .venv\Scripts\genvm-lint.exe check contracts/palinode.py --json
 .venv\Scripts\genvm-lint.exe typecheck contracts/palinode.py --json
-.venv\Scripts\genvm-lint.exe schema contracts/palinode.py --output artifacts/palinode_abi.json
+.venv\Scripts\genvm-lint.exe schema contracts/palinode.py --output artifacts/palinode_schema.json --json
+.venv\Scripts\python.exe -m pytest tests/adversarial tests/property -q
+.venv\Scripts\python.exe -m pytest tests/integration -q -rs
+.venv\Scripts\python.exe scripts/mutation_checks.py
 ```
 
 The same sequence is available as `scripts/phase1_checks.ps1`. Direct tests
 use `genlayer-test` mocks for web and LLM calls; they do not contact Studionet.
-Integration testing against Studionet is a later, explicitly authorized step.
+The integration suite exercises the supported local GLSim JSON-RPC surface and
+reports runner-specific skips separately; local GLSim is not evidence of
+Studionet deployment compatibility. See `docs/INTEGRATION_TESTING.md` and
+`docs/DEPLOYMENT.md`.
 
 ## Known limitations
 
-- Phase 1 supports one contract only and does not expose an indexer or UI.
+- The protocol still supports one canonical contract only and does not expose
+  an indexer or UI.
 - Semantic adjudication relies on independently retrieved public HTTPS pages;
   page availability, page mutation, model disagreement, and source ambiguity
   remain explicit failure or inconclusive paths.
 - Authority verification is limited to the fixed
-  `WELL_KNOWN_ADDRESS_NONCE_V1` policy. v1 only accepts mirrors under the same
-  registered authority origin; cross-authority mirror trust is intentionally
-  deferred.
-- Authority records are immutable verified registrations in Phase 1. Authority
-  revocation and policy rotation require a future explicit protocol method.
+  `WELL_KNOWN_ADDRESS_NONCE_V1` policy. A controlled public HTTPS fixture is
+  still required to exercise live domain proof; the code does not weaken this
+  requirement for testing.
+- Authority versions support permissionless domain-declaration rotation and
+  explicit controller revocation. Revocation lowers trust for new writes but
+  does not rewrite historical evidence or silently invalidate it.
+- Local GLSim integration currently has a Windows runner/temp-file failure in
+  the installed toolchain; the test records the exact skip instead of treating
+  direct-mode success as network proof.
 - The current propagation policy is conservative but intentionally not a
   complete domain theory for every decision system.
 - Recovery records successor lineage, but a full successor re-adjudication
   workflow and reinstatement governance are future work.
 - The direct harness uses the stable `v0.2.16` GenVM artifact. The repository
   does not claim that direct-mode compatibility alone proves Studionet
-  production behavior.
+  production behavior, and no Studionet transaction has been broadcast.
 - No legal, regulatory, or factual truth guarantee is implied by a semantic
   verdict; PALINODE records a bounded adjudication of registered dependency
   impact.

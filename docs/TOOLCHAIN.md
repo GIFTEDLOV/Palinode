@@ -50,8 +50,12 @@ The current stable linter commands are:
 $env:GENVM_VERSION = "v0.2.16"
 .venv\Scripts\genvm-lint.exe check contracts/palinode.py --json
 .venv\Scripts\genvm-lint.exe typecheck contracts/palinode.py --json
-.venv\Scripts\genvm-lint.exe schema contracts/palinode.py --output artifacts/palinode_abi.json
+.venv\Scripts\genvm-lint.exe schema contracts/palinode.py --output artifacts/palinode_schema.json --json
 ```
+
+The final checked schema reports 33 public methods: 18 writes and 15 views.
+The explicit `GENVM_VERSION` environment variable prevents the linter resolver
+from silently selecting a cached release-candidate runtime.
 
 Direct tests use `pytest`, with `genlayer-test`'s direct plugin, mock web/LLM
 responses, validator capture, strict failure fixtures, and the stable runner.
