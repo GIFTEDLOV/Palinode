@@ -267,6 +267,51 @@ def newest_id(client: Any, account: Any, method: str) -> str:
     return page["slot_" + str(count - 1)]
 
 
+def find_node_id(client: Any, account: Any, node_type: str, title: str, source_uri: str = "") -> str:
+    cursor = 0
+    while True:
+        page = read_contract(client, account, "get_node_ids_page", [cursor, 64])
+        for index in range(int(page["count"])):
+            node_id = page["slot_" + str(index)]
+            record = read_contract(client, account, "get_node_record", [node_id])
+            if record["node_type"] == node_type and record["title"] == title and (source_uri == "" or record["source_uri"] == source_uri):
+                return node_id
+        next_cursor = int(page["next_cursor"])
+        if next_cursor <= cursor or int(page["count"]) == 0:
+            break
+        cursor = next_cursor
+    raise RuntimeError("canonical node identity was not found after finalized write")
+
+
+def find_authority_id(client: Any, account: Any, origin: str) -> str:
+    page = read_contract(client, account, "get_authority_ids_page", [0, 64])
+    for index in range(int(page["count"])):
+        authority_id = page["slot_" + str(index)]
+        if read_contract(client, account, "get_source_authority", [authority_id])["canonical_origin"] == origin:
+            return authority_id
+    raise RuntimeError("canonical authority identity was not found after finalized write")
+
+
+def find_edge_id(client: Any, account: Any, parent: str, child: str, relationship: str) -> str:
+    page = read_contract(client, account, "get_edge_ids_page", [0, 64])
+    for index in range(int(page["count"])):
+        edge_id = page["slot_" + str(index)]
+        record = read_contract(client, account, "get_dependency_record", [edge_id])
+        if record["parent_node_id"] == parent and record["child_node_id"] == child and record["relationship"] == relationship:
+            return edge_id
+    raise RuntimeError("canonical dependency identity was not found after finalized write")
+
+
+def find_case_id(client: Any, account: Any, target: str, notice_uri: str) -> str:
+    page = read_contract(client, account, "get_case_ids_page", [0, 64])
+    for index in range(int(page["count"])):
+        case_id = page["slot_" + str(index)]
+        record = read_contract(client, account, "get_revocation_case", [case_id])
+        if record["target_evidence_id"] == target and record["notice_uri"] == notice_uri:
+            return case_id
+    raise RuntimeError("canonical revocation identity was not found after finalized write")
+
+
 def deployment(client: Any, account: Any) -> None:
     record = existing_record("deployment")
     if _STATE.get("deployment_tx_id"):
@@ -326,24 +371,24 @@ def run_canary() -> None:
     _CONTRACT_ADDRESS = _STATE["contract_address"]
 
     authority_tx = submit_write(client, account, "register_authority", "register_source_authority", [FIXTURE_ORIGIN, FIXTURE_POLICY, FIXTURE_NONCE])
-    authority_id = newest_id(client, account, "get_authority_ids_page")
+    authority_id = find_authority_id(client, account, FIXTURE_ORIGIN)
     authority = read_contract(client, account, "get_source_authority", [authority_id])
     evidence_tx = submit_write(client, account, "register_evidence_v1", "register_evidence", [ARTIFACTS["v1"]["uri"], ARTIFACTS["v1"]["sha256"], ARTIFACTS["v1"]["byte_length"], "fixture-vendor-001", "Fictional audit V1", authority_id])
-    evidence_v1 = newest_id(client, account, "get_node_ids_page")
+    evidence_v1 = find_node_id(client, account, "EVIDENCE", "Fictional audit V1", ARTIFACTS["v1"]["uri"])
     auth_tx = submit_write(client, account, "authenticate_evidence_v1", "authenticate_evidence", [evidence_v1])
     v1_record = read_contract(client, account, "get_node_record", [evidence_v1])
     claim_tx = submit_write(client, account, "register_claim", "register_claim", ["fixture-vendor-001", "Claim depending on fictional audit V1"])
-    claim_id = newest_id(client, account, "get_node_ids_page")
+    claim_id = find_node_id(client, account, "CLAIM", "Claim depending on fictional audit V1")
     decision_tx = submit_write(client, account, "register_decision", "register_decision", ["fixture-vendor-001", "Decision depending on the claim"])
-    decision_id = newest_id(client, account, "get_node_ids_page")
+    decision_id = find_node_id(client, account, "DECISION", "Decision depending on the claim")
     edge1_tx = submit_write(client, account, "edge_evidence_claim", "register_dependency", [evidence_v1, claim_id, "SUPPORTS"])
-    edge1_id = newest_id(client, account, "get_edge_ids_page")
+    edge1_id = find_edge_id(client, account, evidence_v1, claim_id, "SUPPORTS")
     edge2_tx = submit_write(client, account, "edge_claim_decision", "register_dependency", [claim_id, decision_id, "REQUIRES"])
-    edge2_id = newest_id(client, account, "get_edge_ids_page")
+    edge2_id = find_edge_id(client, account, claim_id, decision_id, "REQUIRES")
     edges = [read_contract(client, account, "get_dependency_record", [edge1_id]), read_contract(client, account, "get_dependency_record", [edge2_id])]
 
     case_tx = submit_write(client, account, "open_revocation", "open_revocation_case", [evidence_v1, authority_id, ARTIFACTS["revocation"]["uri"], ARTIFACTS["revocation"]["sha256"], ARTIFACTS["revocation"]["byte_length"], "WITHDRAWN", "Controlled fictional fixture revocation"])
-    case_id = newest_id(client, account, "get_case_ids_page")
+    case_id = find_case_id(client, account, evidence_v1, ARTIFACTS["revocation"]["uri"])
     case_before = read_contract(client, account, "get_revocation_case", [case_id])
     assess_tx = submit_write(client, account, "assess_revocation", "assess_revocation", [case_id])
     case_after_assessment = read_contract(client, account, "get_revocation_case", [case_id])
@@ -379,7 +424,7 @@ def run_canary() -> None:
         case_after_retry = None
 
     evidence_v2_tx = submit_write(client, account, "register_evidence_v2", "register_evidence", [ARTIFACTS["v2"]["uri"], ARTIFACTS["v2"]["sha256"], ARTIFACTS["v2"]["byte_length"], "fixture-vendor-001", "Fictional audit V2 corrected", authority_id])
-    evidence_v2 = newest_id(client, account, "get_node_ids_page")
+    evidence_v2 = find_node_id(client, account, "EVIDENCE", "Fictional audit V2 corrected", ARTIFACTS["v2"]["uri"])
     auth_v2_tx = submit_write(client, account, "authenticate_evidence_v2", "authenticate_evidence", [evidence_v2])
     v2_record = read_contract(client, account, "get_node_record", [evidence_v2])
     successor_tx = submit_write(client, account, "link_successor", "link_evidence_successor", [evidence_v1, evidence_v2])
