@@ -17,21 +17,22 @@ itself retrieve and contextualize mutable, unstructured evidence. An ordinary
 backend can perform that semantic work, but its answer is controlled by one
 operator and is not an adversarially shared GenLayer consensus outcome.
 
-## Phase 2.6 status
+## Phase 2.7 status
 
 This phase contains one canonical Intelligent Contract at
 [contracts/palinode.py](contracts/palinode.py). There is no frontend, indexer,
 ERC20 integration, cross-contract messaging, or GitHub repository in this
 phase. The local security closure, cause-aware recovery lifecycle, bounded
 pagination, adversarial tests, mutation harness, integration harness, and one
-  controlled Studionet canary are implemented. The archived canary returned a
-  recorded `RETRYABLE`/`INCONCLUSIVE` result with `LLM_MALFORMED`; the trace
-  analysis and corrected structured-output path are recorded separately. The
-  archived address is not upgraded in place. Canary-v2 was deployed once after
-  all local gates and deterministic setup/authentication finalized, but its one
-  permitted semantic attempt was `UNDETERMINED` because the provider returned
-  the unlisted bounded token `MATERIAL_REVOCATION`. The trace and readbacks are
-  archived under `evidence/studionet/canary-v2/`; the contract is not frozen.
+  controlled Studionet canary are implemented. Canary-v1 and canary-v2 remain
+  archived historical deployments: v1 recorded a malformed-output failure and
+  v2 safely rejected an unlisted enum. Canary-v3 was deployed exactly once
+  after the strict prompt/schema fix and all local gates passed. Its one live
+  semantic revocation finalized as `CONCLUSIVE`/`MATERIAL`/`INVALIDATE`,
+  bounded propagation completed, and the controlled successor recovery
+  finalized as `SUPERSEDE`. The V3 address and readbacks are archived under
+  `evidence/studionet/canary-v3/`; see
+  [docs/CONTRACT_FREEZE.md](docs/CONTRACT_FREEZE.md).
 
 The target is stable Studionet:
 
@@ -212,8 +213,10 @@ automatically resubmits them.
 - The direct harness uses the stable `v0.2.16` GenVM artifact. The repository
   does not claim that direct-mode compatibility alone proves Studionet
   production behavior. The archived canary-v1 and canary-v2 evidence retain
-  the actual hosted transaction outcomes; canary-v2's live semantic closure
-  remains an explicit blocker.
+  their actual hosted outcomes; canary-v3 is the candidate frozen address.
+  The installed SDK does not expose a network source-download endpoint, so
+  source parity is recorded against the exact submitted source hash and this
+  limitation is explicit in the freeze record.
 - No legal, regulatory, or factual truth guarantee is implied by a semantic
   verdict; PALINODE records a bounded adjudication of registered dependency
   impact.

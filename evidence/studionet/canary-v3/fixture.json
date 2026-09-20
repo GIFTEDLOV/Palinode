@@ -1,0 +1,39 @@
+{
+  "artifacts": {
+    "correction": {
+      "byte_length": 326,
+      "sha256": "43110fe3ce4dc9d5b2158c0892758559c21903ef9e50731b8b6cabdb8aca6212",
+      "uri": "https://palinode-fixture.vercel.app/notices/vendor-audit-v1-correction.json"
+    },
+    "revocation": {
+      "byte_length": 278,
+      "sha256": "0a735d8344897f0406bf84f2bd62b9bae55898d0e45ca670a001597a6a53492f",
+      "uri": "https://palinode-fixture.vercel.app/notices/vendor-audit-v1-revoked.json"
+    },
+    "v1": {
+      "byte_length": 241,
+      "sha256": "29084e2b0430225ef85d81da3422c0b4a7bdfdf0357845eaec7e1ac0df45e5c2",
+      "uri": "https://palinode-fixture.vercel.app/evidence/vendor-audit-v1.json"
+    },
+    "v2": {
+      "byte_length": 328,
+      "sha256": "c005ac1d5de56b14cb95fbacf6ecddc81386846a3df5bd5a3e28f0498b509ab3",
+      "uri": "https://palinode-fixture.vercel.app/evidence/vendor-audit-v2.json"
+    }
+  },
+  "deployment_url": "https://palinode-fixture.vercel.app",
+  "well_known": {
+    "binding_matches": true,
+    "byte_length": 227,
+    "declaration": {
+      "authority_address": "0x7e68EAdc3bEDfF1E508D25cC7f1611D1455B4FC4",
+      "canonical_origin": "https://palinode-fixture.vercel.app",
+      "nonce": "PALINODE_FIXTURE_NONCE_V1",
+      "palinode": "1",
+      "verification_policy": "WELL_KNOWN_ADDRESS_NONCE_V1"
+    },
+    "sha256": "037181c4cfad5a5eed35d09036d9c5acfa605b185eeb0f73cbd4b067581bd635",
+    "status": 200
+  },
+  "well_known_url": "https://palinode-fixture.vercel.app/.well-known/palinode.json"
+}

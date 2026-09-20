@@ -146,3 +146,34 @@ allowed enum and list every allowed reason code in the prompt. This is not
 fuzzy parsing or a relaxation of the bounded schema. It was applied locally
 after the one permitted live semantic attempt; it was not deployed during this
 run, so canary-v2 remains an archived failed semantic-closure attempt.
+
+## Canary-v3 resolution
+
+The unreleased fix was intentionally limited to the prompt/schema boundary. It
+did not add synonyms or loosen validation. The prompt now says to return JSON
+only, use exactly the supplied keys and enum values, avoid combined/renamed
+labels and prefixes/suffixes, and verify exact enum membership before return.
+`MATERIAL_REVOCATION` remains legal only as a closed `reason_code`.
+
+Canary-v3 deployment transaction
+`0xdc1e5a61f584b2907a0bdadf258ece092fcb361110395c4055b95ffd048f6bd8`
+finalized with `FINISHED_WITH_RETURN`. Its single semantic transaction
+`0x00d76be0d0680cb24d4726caf881c97a9d618c6efc94ad61cef0acf5888487e5`
+finalized with a canonical seven-field result:
+
+```json
+{
+  "result_status": "CONCLUSIVE",
+  "change_authentic": true,
+  "same_subject": true,
+  "original_evidence_affected": true,
+  "materiality": "MATERIAL",
+  "root_effect": "INVALIDATE",
+  "reason_code": "MATERIAL_WITHDRAWAL"
+}
+```
+
+This confirms the corrected boundary on hosted Studionet. V1 authentication
+remained `CLEARED` while its reliance state was invalidated and later
+superseded by the matching V2 recovery. Full transaction IDs and readbacks are
+under `evidence/studionet/canary-v3/`.

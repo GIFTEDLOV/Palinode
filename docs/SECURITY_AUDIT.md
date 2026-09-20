@@ -63,3 +63,18 @@ the unlisted token `MATERIAL_REVOCATION`, so validators rejected it and the
 transaction became `UNDETERMINED`. The complete analysis and evidence
 limitation are recorded in `docs/LIVE_SEMANTIC_FAILURE_ANALYSIS.md`. No
 semantic retry or second deployment was submitted in this run.
+
+## Phase 2.7 final closure
+
+| Finding | Severity | Exploitable before fix? | Fix | Proof |
+|---|---|---|---|---|
+| Provider used a combined semantic token (`MATERIAL_REVOCATION`) in a field that only permits materiality enums | High | No fail-open impact; V2 validators rejected it, but the live semantic path could not close | Kept strict enum validation, made `MATERIAL_REVOCATION` a closed `reason_code` only, and strengthened the JSON/schema prompt; no fuzzy parsing was added | exact regression matrix, 34/34 killed mutations, and V3 live `MATERIAL` result |
+| Final canary orchestration could retry a non-material semantic outcome or begin recovery without a material adverse cause | Medium | Evidence-quality and fee/control risk | V3 harness submits exactly one revocation assessment and gates V2/recovery on `MATERIAL` plus an adverse root effect | `scripts/studionet_canary.py`, V3 `transactions.json`, and finalized lifecycle |
+
+Canary-v3 finalized at
+`0x9c9d1993cd938846D1163Bba9AA81AC6d165de88` with source hash
+`bd5e981605f2533bd5354a4e884288d585020514d4be9eaabd9cdb4ff39d4c06`.
+The live proof preserved authentication/reliance separation, completed both
+bounded queues, and resolved the matching active cause through a conclusive
+successor recovery. The archived V1 and V2 addresses remain historical
+canaries and are not upgraded in place.

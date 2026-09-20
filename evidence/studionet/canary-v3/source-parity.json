@@ -1,0 +1,9 @@
+{
+  "chain_id": 61999,
+  "contract_address": "0x9c9d1993cd938846D1163Bba9AA81AC6d165de88",
+  "contract_path": "contracts/palinode.py",
+  "contract_sha256": "bd5e981605f2533bd5354a4e884288d585020514d4be9eaabd9cdb4ff39d4c06",
+  "deployed": true,
+  "network": "studionet",
+  "source_parity": "LOCAL_SOURCE_HASH_RECORDED; NETWORK_SOURCE_ENDPOINT_UNAVAILABLE_IN_INSTALLED_SDK"
+}

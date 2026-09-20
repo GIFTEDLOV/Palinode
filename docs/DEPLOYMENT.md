@@ -48,3 +48,23 @@ was submitted.
 
 No transaction is rebroadcast after a timeout, and no fake domain ownership or
 weakened authority rule is permitted.
+
+## Final canary-v3
+
+The final candidate was deployed exactly once from the clean freeze candidate:
+
+```text
+contract: 0x9c9d1993cd938846D1163Bba9AA81AC6d165de88
+deployment tx: 0xdc1e5a61f584b2907a0bdadf258ece092fcb361110395c4055b95ffd048f6bd8
+source sha256: bd5e981605f2533bd5354a4e884288d585020514d4be9eaabd9cdb4ff39d4c06
+status: FINALIZED / FINISHED_WITH_RETURN
+```
+
+The fresh lifecycle used only the controlled fixture. V1 authentication stayed
+`CLEARED` through challenge opening, semantic review, invalidation,
+propagation, and recovery. The one semantic assessment returned the strict
+bounded result `CONCLUSIVE / MATERIAL / INVALIDATE / MATERIAL_WITHDRAWAL`.
+Both bounded queues finalized `COMPLETE`. The semantic transaction was tracked
+again by ID in a restarted process with zero resubmissions. The installed SDK
+does not provide a network source-download endpoint; the source-parity
+artifact therefore records the exact submitted local hash and that limitation.

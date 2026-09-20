@@ -115,3 +115,13 @@ conclusive recovery-assessment budget. `REINSTATE` and `SUPERSEDE` resolve
 only the adverse cause locked into that recovery case. A node remains affected
 while any other active cause remains. There is no direct owner or administrator
 reinstatement transition.
+
+## Live canary-v3 confirmation
+
+The final controlled lifecycle confirmed the separation in the deployed
+contract. V1 was `CLEARED` for authentication immediately after registration
+and remained `CLEARED` after case opening, semantic review, material
+invalidation, bounded propagation, and successor recovery. Its reliance status
+transitioned `ACTIVE` to `INVALIDATED` and then `SUPERSEDED`; its bounded status
+history retained both transitions. V2 was independently authenticated
+`CLEARED` and remained a separate immutable node.

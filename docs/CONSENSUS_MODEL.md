@@ -102,3 +102,14 @@ has no authority semantics.
 Accepted is not the same as protocol finality. Consumers must track the
 Intelligent Contract transaction through its finalization lifecycle before
 using the result as final application state.
+
+## Final live semantic proof
+
+Canary-v3 used the strict seven-field boundary after the prompt was
+strengthened to require JSON-only output, exact keys, exact enum membership,
+and no combined or renamed labels. Its single live revocation assessment
+finalized with `MAJORITY_AGREE` and `FINISHED_WITH_RETURN`; the canonical
+result was `CONCLUSIVE`, `MATERIAL`, `INVALIDATE`, reason
+`MATERIAL_WITHDRAWAL`. The earlier `MATERIAL_REVOCATION` token is legal only
+as a closed `reason_code`, never as a `materiality` value. Unknown labels
+remain validator-rejected and cannot become a semantic result.
