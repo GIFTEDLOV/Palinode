@@ -32,8 +32,10 @@ supported writes enforce the inequality, every directed path strictly
 increases in sequence. A directed cycle would require a strict increase around
 the cycle and is therefore impossible without an unbounded graph traversal.
 
-Per-node incoming and outgoing edge limits are 64. Global Phase 1 limits are
-4096 nodes and 16,384 edges.
+Per-node incoming and outgoing edge limits are 64. There are no protocol-wide
+lifetime node or edge caps. Append-only ID registries are exposed through
+bounded pages (`get_*_ids_page(cursor, limit)`, maximum page size 64), so a
+view never has to return the complete lifetime graph.
 
 ## Propagation policy
 
@@ -75,3 +77,8 @@ Queue membership is scoped by `case_id`. Queue entries are idempotently
 deduplicated. Calling the method after completion returns zero and cannot
 mutate state. A transaction never performs recursive DFS/BFS or scans the
 entire graph.
+
+Recovery uses a separate queue and cursor. It removes only the named adverse
+case's active cause from each affected node. Other active causes remain in the
+bounded per-node cause set; only the final resolved cause can permit
+`REINSTATED` or `SUPERSEDED` according to the accepted recovery effect.

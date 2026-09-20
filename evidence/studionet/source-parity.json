@@ -1,0 +1,9 @@
+{
+  "contract_path": "contracts/palinode.py",
+  "contract_sha256": "1b77dd0d33d83ebc45d12c7e721cc1d34eb907cba1e96ccfcd79c43d15bc4128",
+  "deployed": false,
+  "source_parity": "NOT_APPLICABLE_BEFORE_DEPLOYMENT",
+  "schema_generated_locally": true,
+  "network": "studionet",
+  "chain_id": 61999
+}

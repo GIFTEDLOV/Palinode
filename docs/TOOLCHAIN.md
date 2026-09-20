@@ -2,7 +2,7 @@
 
 ## Target network
 
-Phase 1 targets stable Studionet only:
+Phase 2.5 targets stable Studionet only:
 
 ```text
 RPC: https://studio.genlayer.com/api
@@ -10,9 +10,10 @@ chain ID: 61999
 alias: studionet
 ```
 
-The repository does not target `studio-dev`, chain ID `61997`, Bradbury, or
-deployment. The checked-in `gltest.config.yaml` selects the built-in
-`studionet` profile for any future integration run.
+The repository does not target `studio-dev`, chain ID `61997`, or Bradbury.
+The checked-in `gltest.config.yaml` selects the built-in `studionet` profile.
+No contract deployment was broadcast because the resolved account was
+unfunded.
 
 ## Resolved versions
 
@@ -53,7 +54,7 @@ $env:GENVM_VERSION = "v0.2.16"
 .venv\Scripts\genvm-lint.exe schema contracts/palinode.py --output artifacts/palinode_schema.json --json
 ```
 
-The final checked schema reports 33 public methods: 18 writes and 15 views.
+The final checked schema reports 41 public methods: 21 writes and 20 views.
 The explicit `GENVM_VERSION` environment variable prevents the linter resolver
 from silently selecting a cached release-candidate runtime.
 
@@ -70,3 +71,8 @@ Implementation choices follow the current official GenLayer documentation for
 non-deterministic blocks, `gl.nondet.web`, `gl.nondet.exec_prompt`, custom
 `run_nondet_unsafe` validators, direct-mode mocks, transaction context, stable
 Studionet, and `genvm-lint` schema/typecheck commands.
+
+One fresh isolated virtual environment was created with the same stable
+`genlayer-test[sim]==0.29.2` and `genlayer-py==0.16.3` pins. Its GLSim
+deployment/readback reproduction failed with the same compressed-stream error
+as the existing environment, so `GLSIM_STATUS=KNOWN_LOCAL_BLOCKER` is recorded.

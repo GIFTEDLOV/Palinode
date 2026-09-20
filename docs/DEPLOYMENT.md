@@ -1,6 +1,6 @@
 # Deployment gate
 
-No deployment has been broadcast for Phase 2.
+No PALINODE contract deployment has been broadcast for Phase 2.5.
 
 A future canary must use only stable Studionet:
 
@@ -17,11 +17,11 @@ the actual final consensus status and a successful execution result. The
 contract address, schema/readback, `contract_info` where available, and source
 hash parity must then be checked.
 
-The canary is currently blocked before broadcast by two concrete conditions:
-the local GLSim deployment path hits an installed Windows runner/temp-file
-failure, and there is no controlled HTTPS authority fixture serving the exact
-PALINODE well-known document. The authority check will not be weakened or
-replaced with a fake public-domain ownership claim. When the fixture exists,
-only its live authority portion should be added to the smoke lifecycle before
-semantic spending.
-
+The controlled fixture is deployed at `https://palinode-fixture.vercel.app` and
+serves the exact committed bytes recorded in `evidence/studionet/fixture.json`.
+The local GLSim issue is recorded as `KNOWN_LOCAL_BLOCKER`; it does not block
+hosted Studionet by itself. The current preflight is stopped before broadcast
+because the resolved public deployer address has zero GEN balance. The faucet
+or another documented funding action must fund that same address first. No
+contract transaction is rebroadcast after a timeout, and no fake domain
+ownership or weakened authority rule is permitted.

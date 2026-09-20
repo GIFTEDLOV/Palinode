@@ -19,6 +19,12 @@
 
 Full source bodies are not stored on-chain.
 
+The recorded source URI is the canonical source identity. A separate retrieval
+mirror may be cross-origin, but it is accepted only after a bounded consensus
+web check proves exact digest and byte-length equality. Mirrors never change
+the canonical URI, authority, authority version, subject, digest, or assessment
+state, and a mirror alone can never produce `CLEARED`.
+
 ## Identity and duplicate policy
 
 The evidence identity tuple is:
@@ -84,6 +90,15 @@ not require trusting a compromised old controller and does not rewrite old
 evidence. Revocation lowers trust for new evidence and assessments while
 historical records remain inspectable. There is no owner override, erase, or
 arbitrary authority reassignment.
+
+## Safe recovery lineage
+
+Replacement evidence is registered as a new immutable node and authenticated
+independently. `link_evidence_successor(old, new)` preserves both identities.
+The recovery case stores the successor ID and the exact material adverse case
+ID; it cannot be retargeted during reassessment. Recovery is permissionless to
+submit but not permissionless to force: only a strict consensus result can
+resolve that named active cause.
 
 ## Mutable URLs
 

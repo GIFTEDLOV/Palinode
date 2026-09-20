@@ -36,9 +36,9 @@ semantic decision-makers for its own case. Authority IDs have versioned
 controllers and explicit `ACTIVE`/`REVOKED` lifecycle.
 
 There is no owner, administrator, pause authority, arbitrary status setter, or
-verdict override in Phase 1. Capacity constants and enums are code-level
-protocol configuration and can change only through a future code-governance
-decision, not through a public method.
+verdict override. There are no global lifetime registry caps that an actor can
+fill to brick unrelated future registrations. Per-operation bounds are fixed
+protocol rules, and ID enumeration is paginated.
 
 ## What the model does not trust
 
@@ -61,6 +61,11 @@ simultaneously. `SOURCE_UNAVAILABLE` is an explicit liveness state, not a
 semantic rejection or clearance. Any caller may retry through digest-verified
 cross-origin retrieval mirrors without changing the locked evidence identity.
 Mirrors are not authority records and cannot clear an object by themselves.
+
+Recovery is not a trust shortcut. A caller may open a recovery case only after
+the successor is linked and independently `CLEARED`, but only the bounded
+consensus result can resolve the named adverse cause. No owner-only reinstate
+method exists; active causes from other cases are not removed.
 
 ## Finality boundary
 

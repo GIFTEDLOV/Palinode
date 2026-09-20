@@ -18,5 +18,24 @@ against every deployment or governance risk.
 | Tool resolver could select a cached release candidate | High | Lint/schema results could target the wrong runtime | Pin stable `GENVM_VERSION=v0.2.16` and record exact toolchain | `docs/TOOLCHAIN.md`, lint/type/schema runs |
 | Local GLSim deploy is blocked by an installed Windows runner/temp-file failure | External | Network evidence would be falsely claimed from direct mode | Integration test starts GLSim and records a precise skip; no Studionet broadcast | `tests/integration/test_glsim_network.py` |
 
-Selected security guards were mutation-tested. The final harness killed 16 of
-16 targeted mutants; no surviving security mutant was accepted.
+Selected security guards were mutation-tested. The Phase 2 baseline killed
+16/16 mutants. Phase 2.5 added 11 recovery/capacity guards; the final harness
+killed 27/27 targeted mutants with no survivors.
+
+## Phase 2.5 release-blocker audit
+
+| Finding | Severity | Exploitable before fix? | Fix | Proof |
+|---|---|---|---|---|
+| Protocol-wide node/edge/case/authority lifetime caps could brick future writes | Critical | Yes | Removed global caps; retained local fan-out, queue, body, mirror, history, telemetry, and page bounds | 4,097-node N+1 test and paginated view tests |
+| Full lifetime ID getters could require unbounded execution/return data | High | Yes | Replaced them with maximum-64 page views including bounded cursor/next-cursor metadata | `test_lifetime_caps_are_absent_and_pagination_is_bounded` |
+| Recovery was only lineage/status scaffolding, not a consensus-backed lifecycle | Critical | Yes | Added immutable recovery cases, strict leader/validator result, deterministic recovery queue, and explicit retry state | `tests/adversarial/test_capacity_and_recovery.py` recovery suite |
+| Recovery of one cause could restore a node despite another active adverse cause | Critical | Yes | Added per-node bounded active-cause slots and cause-specific recovery resolution | `test_two_active_causes_require_two_successful_recoveries` |
+| Recovery could be attempted without an independently cleared linked successor | High | Yes | Deterministic preconditions require `CLEARED` successor, same subject, and explicit successor lineage | successor precondition tests and recovery mutants |
+| Recovery outage/malformed semantic result could become a successful resolution | High | Yes | Retryable result and `INCONCLUSIVE` recovery state with bounded retry ring; no cause mutation | `test_recovery_failure_inconclusive_and_source_unavailable_are_retryable` |
+| Recovery retry telemetry could grow without bound | Medium | Yes | Eight-entry ring plus monotonic counter; retry does not consume conclusive attempt budget | `test_recovery_history_and_retry_storage_remain_bounded` |
+| Local GLSim failure could be misreported as hosted network proof | High | No protocol exploit; evidence-quality risk | One clean isolated reproduction; record `KNOWN_LOCAL_BLOCKER`; continue only with hosted Studionet gate | `tests/integration/test_glsim_network.py`, isolated venv run |
+| Controlled authority fixture was absent for live proof | High | Would force unsafe test weakening | Deployed fictional static fixture and verified exact public bytes; well-known declaration binds the resolved public address | fixture manifest and remote byte parity checks |
+
+No Studionet contract deployment was attempted because the resolved public
+deployer address was unfunded. This is an external pre-broadcast gate, not a
+contract failure.

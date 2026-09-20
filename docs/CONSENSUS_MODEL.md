@@ -56,6 +56,23 @@ Only after `run_nondet_unsafe` returns does deterministic code write the case
 result, assessment sequence/time, root status, and queue state. `process_impact`
 is entirely deterministic and can be called later in bounded steps.
 
+Recovery uses the same leader/validator boundary with a smaller strict result:
+
+```text
+result_status: CONCLUSIVE | RETRYABLE
+same_subject: bool
+successor_relevant: bool
+prior_defect_resolved: bool
+recovery_effect: REINSTATE | SUPERSEDE | NO_CHANGE | INCONCLUSIVE
+reason_code: fixed recovery enum
+```
+
+The recovery block retrieves only the locked successor and the locked adverse
+notice. It does not read or mutate storage, choose validators, traverse the
+graph, or calculate downstream effects. Deterministic code validates the
+result, resolves only the named active cause, and later processes a bounded
+recovery queue. A second active cause remains effective.
+
 ## Prompt injection and outage behavior
 
 Evidence and correction pages are wrapped as untrusted data and are explicitly

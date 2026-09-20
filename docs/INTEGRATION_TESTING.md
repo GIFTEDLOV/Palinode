@@ -14,8 +14,14 @@ tracker independently. Run:
 ```
 
 The current machine passes the JSON-RPC, deterministic graph readback, and
-transaction-tracker checks. The deployment/readback test is skipped when the installed Windows GLSim runner
-returns its observed `WinError 32`/compressed-runner failure. This is recorded
-as an integration blocker, not converted into a successful deployment. Direct
-mode and local GLSim also do not establish that the stable Studionet service
-will accept a canary.
+transaction-tracker checks. The installed Windows GLSim deployment/readback
+test and one fresh isolated `genlayer-test[sim]` reproduction both fail with
+`Compressed file ended before the end-of-stream marker was reached`.
+`GLSIM_STATUS=KNOWN_LOCAL_BLOCKER` records this local simulator limitation; a
+local chain ID of 61999 is not treated as Studionet equivalence. Direct mode
+and local GLSim do not establish that the stable Studionet service will accept
+a canary.
+
+The hosted canary must use the documented `genlayer-py` stable client profile
+for `https://studio.genlayer.com/api` and chain 61999, persist the original
+transaction ID, and require both final consensus and successful execution.

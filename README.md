@@ -17,14 +17,16 @@ itself retrieve and contextualize mutable, unstructured evidence. An ordinary
 backend can perform that semantic work, but its answer is controlled by one
 operator and is not an adversarially shared GenLayer consensus outcome.
 
-## Phase 2 status
+## Phase 2.5 status
 
 This phase contains one canonical Intelligent Contract at
 [contracts/palinode.py](contracts/palinode.py). There is no frontend, indexer,
 deployment, ERC20 integration, cross-contract messaging, or GitHub repository
-in this phase. The local security closure and integration harnesses are
-implemented; live authority validation and a Studionet canary remain gated on
-external fixtures and network tooling.
+in this phase. The local security closure, cause-aware recovery lifecycle,
+bounded pagination, adversarial tests, mutation harness, and integration
+harness are implemented. Live authority validation and a Studionet canary
+remain gated on a controlled HTTPS fixture, preflight funding, and final
+network lifecycle checks.
 
 The target is stable Studionet:
 
@@ -113,6 +115,17 @@ clearance from current reliance.
    the case is complete.
 9. Replacement evidence is a new immutable object. `link_evidence_successor`
    records lineage without rewriting the old object.
+10. A permissionless recovery case binds one material adverse case to one
+    already linked and independently `CLEARED` successor. GenLayer adjudicates
+    whether that successor resolves the specific defect; deterministic bounded
+    recovery propagation removes only that case's active cause. Another active
+    adverse cause keeps the node adversely affected.
+
+There are no protocol-wide lifetime caps on nodes, edges, authorities,
+revocation cases, or recovery cases. Per-node fan-in/fan-out, bounded queues,
+fixed-size history/telemetry rings, mirror limits, string/body limits, and
+per-call step limits remain. Lifetime IDs are exposed only through bounded page
+views, never through an unbounded full-list getter.
 
 ## Trust boundaries
 
@@ -172,13 +185,19 @@ Studionet deployment compatibility. See `docs/INTEGRATION_TESTING.md` and
 - Authority versions support permissionless domain-declaration rotation and
   explicit controller revocation. Revocation lowers trust for new writes but
   does not rewrite historical evidence or silently invalidate it.
-- Local GLSim integration currently has a Windows runner/temp-file failure in
-  the installed toolchain; the test records the exact skip instead of treating
-  direct-mode success as network proof.
+- Recovery is consensus-backed and cause-aware. `REINSTATED` is never an owner
+  setter: each active adverse cause must be resolved by its own accepted
+  recovery result. `SUPERSEDED` remains distinct from reinstatement.
+- Local GLSim integration has an observed Windows runner/temp-file failure in
+  the installed toolchain; one isolated clean reproduction is required before
+  recording it as a known local blocker, and hosted Studionet remains the
+  authoritative integration target.
 - The current propagation policy is conservative but intentionally not a
   complete domain theory for every decision system.
-- Recovery records successor lineage, but a full successor re-adjudication
-  workflow and reinstatement governance are future work.
+- Authority version history is bounded to eight versions per authority; this is
+  a per-authority execution bound, not a protocol-wide lifetime capacity cap.
+- Live recovery and semantic behavior still depend on public HTTPS availability
+  and real validator agreement; local mocks cannot prove hosted behavior.
 - The direct harness uses the stable `v0.2.16` GenVM artifact. The repository
   does not claim that direct-mode compatibility alone proves Studionet
   production behavior, and no Studionet transaction has been broadcast.

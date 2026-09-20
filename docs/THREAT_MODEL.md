@@ -57,10 +57,12 @@ rewritten, a cycle cannot be introduced through supported writes.
 
 ## Graph fan-out and denial of service
 
-Per-node incoming/outgoing limits, global node/edge limits, bounded recent
-history, fixed mirror counts, bounded retry telemetry, fetch-size limits,
-assessment attempt limits, and a 32-edge propagation limit constrain resource
-use. The queue is resumable, so no transaction must traverse a full graph.
+Per-node incoming/outgoing limits, bounded recent history, fixed mirror counts,
+bounded retry telemetry, fetch-size limits, assessment attempt limits, bounded
+page views, and a 32-edge propagation limit constrain per-transaction resource
+use. There are no global lifetime node/edge/case/authority caps that can brick
+future independent writes. The queue is resumable, so no transaction must
+traverse a full graph.
 
 ## Unbounded propagation
 
@@ -122,6 +124,21 @@ without it. No indexer output is accepted as a semantic result.
 An EVM receipt or accepted proposal is not necessarily final Intelligent
 Contract state. Integrators must follow the GenLayer transaction lifecycle and
 appeal window. Phase 1 has no consequential cross-contract message path.
+
+## Recovery and cross-case composition
+
+Recovery identities bind the affected node, successor evidence, and one
+material adverse case. A successor must be linked and independently cleared;
+the result is restricted to `REINSTATE`, `SUPERSEDE`, `NO_CHANGE`, or
+inconclusive. Each material case owns a separate bounded active-cause slot.
+Resolving one cause cannot erase another, and ordinary later cases cannot
+downgrade a stronger reliance status. Recovery queues use their own case key,
+cursor, and bounded step limit, preventing cross-case queue interference.
+
+Submission, provisional acceptance, execution result, finalization, and
+timeout are separate application states. A timeout does not authorize
+automatic resubmission; the persisted transaction ID is polled again.
+`ACCEPTED` alone is not final application success.
 
 The application model must persist the submitted GenLayer transaction ID and
 track submission, accepted consensus, execution success, and finalization as

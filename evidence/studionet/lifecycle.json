@@ -1,0 +1,10 @@
+{
+  "status": "NOT_STARTED",
+  "network": "studionet",
+  "chain_id": 61999,
+  "deployment_attempted": false,
+  "transaction_ids": [],
+  "final_status": null,
+  "execution_result": null,
+  "reason": "Funding is required before the one permitted canary broadcast."
+}

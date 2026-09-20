@@ -99,3 +99,36 @@ and all content identity fields; reassessment accepts only `case_id`. Callers do
 semantic decision-makers. GenLayer's assigned leader and validator committee
 remain authoritative for the semantic result; application owners have no
 suppression or override path.
+
+## Recovery cases
+
+`open_recovery_case(affected_node_id, successor_evidence_id, adverse_case_id,
+opening_note)` is permissionless but deterministic. It requires the successor
+to be an evidence node with the same subject, independently `CLEARED`, and
+explicitly linked from the affected evidence. The adverse case must be the
+same target, conclusive `MATERIAL`, and still own an active cause. The recovery
+identity is the immutable tuple `(affected_node_id, successor_evidence_id,
+adverse_case_id)`; exact duplicates are rejected.
+
+`assess_recovery(recovery_id)` asks whether the authenticated successor
+resolves the specific prior defect. The bounded result is:
+
+```json
+{
+  "result_status": "CONCLUSIVE",
+  "same_subject": true,
+  "successor_relevant": true,
+  "prior_defect_resolved": true,
+  "recovery_effect": "REINSTATE",
+  "reason_code": "RECOVERY_RESOLVED_REINSTATE"
+}
+```
+
+The only effects are `REINSTATE`, `SUPERSEDE`, `NO_CHANGE`, and
+`INCONCLUSIVE`. Source/notice outage, digest mismatch, malformed output, and
+LLM failure are `RETRYABLE` and enter an explicit retryable state. They never
+resolve a cause. `process_recovery_impact(recovery_id, max_steps)` is a
+deterministic bounded queue operation and can be resumed or repeated safely.
+Historical adverse cases remain intact. Recovery A cannot remove active cause
+B; the node becomes clear for current reliance only after all active causes
+that affect it have been separately resolved.

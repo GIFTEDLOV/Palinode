@@ -14,7 +14,7 @@ the transition helper.
 | `UNDER_REVIEW` | `ACTIVE`, `QUESTIONED`, `QUARANTINED`, `SUPERSEDED`, `INVALIDATED`, `INCONCLUSIVE` |
 | `QUARANTINED` | `UNDER_REVIEW`, `SUPERSEDED`, `INVALIDATED`, `REINSTATED`, `INCONCLUSIVE` |
 | `SUPERSEDED` | `REINSTATED`, `INVALIDATED` |
-| `INVALIDATED` | `REINSTATED` |
+| `INVALIDATED` | `REINSTATED`, `SUPERSEDED` |
 | `REINSTATED` | `ACTIVE`, `QUESTIONED`, `UNDER_REVIEW`, `QUARANTINED`, `SUPERSEDED`, `INVALIDATED`, `INCONCLUSIVE` |
 | `INCONCLUSIVE` | `ACTIVE`, `QUESTIONED`, `UNDER_REVIEW`, `QUARANTINED`, `SUPERSEDED`, `INVALIDATED`, `REINSTATED` |
 
@@ -85,3 +85,20 @@ notice identities remain independent and ordered by opening sequence.
 `link_evidence_successor(old, new)` stores explicit predecessor/successor
 lineage. If the old evidence is not already `INVALIDATED` or `SUPERSEDED`, the
 allowed `SUPERSEDED` transition is used. The old object is never rewritten.
+
+A recovery case has its own explicit state machine:
+
+| Current | Legal next statuses |
+|---|---|
+| `OPEN` | `INCONCLUSIVE`, `PROPAGATING`, `COMPLETE` |
+| `INCONCLUSIVE` | `INCONCLUSIVE`, `PROPAGATING`, `COMPLETE` |
+| `PROPAGATING` | `COMPLETE` |
+| `COMPLETE` | none |
+
+Only a conclusive strict recovery result can create `PROPAGATING` or
+`COMPLETE` recovery state. `RETRYABLE` source/LLM failures enter
+`INCONCLUSIVE`, increment a bounded retry counter/ring, and do not consume the
+conclusive recovery-assessment budget. `REINSTATE` and `SUPERSEDE` resolve
+only the adverse cause locked into that recovery case. A node remains affected
+while any other active cause remains. There is no direct owner or administrator
+reinstatement transition.
