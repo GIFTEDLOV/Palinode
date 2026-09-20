@@ -106,7 +106,7 @@
       "adverse_case_id": "c33a6a26f342279d29676b59c6242959cf219c1a30449508ea5f45341209b699",
       "affected_node_id": "1592fbc79ab2eac54ff77a793e237e141277b4dffc589b9f7d84388cdd1e709c",
       "assessment_count": "1",
-      "case_status": "PROPAGATING",
+      "case_status": "COMPLETE",
       "final_queue": {
         "case_status": "COMPLETE",
         "cursor": "2",
