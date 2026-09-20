@@ -1,9 +1,13 @@
 {
+  "chain_id": 61999,
+  "contract_address": "0x712Dbb59F950D0D300d3E89Ed2Ac52db715383E4",
+  "tool_versions": {
+    "genlayer-py": "0.16.3",
+    "genvm_version": "v0.2.16"
+  },
   "contract_path": "contracts/palinode.py",
   "contract_sha256": "eb39390b9da51e70aa54af130c1d45ab392c1b85d327975c462df5d5f10984be",
-  "deployed": false,
-  "source_parity": "NOT_APPLICABLE_BEFORE_DEPLOYMENT",
-  "schema_generated_locally": true,
+  "deployed": true,
   "network": "studionet",
-  "chain_id": 61999
+  "source_parity": "LOCAL_SOURCE_HASH_RECORDED; NETWORK_SOURCE_ENDPOINT_UNAVAILABLE_IN_INSTALLED_SDK"
 }

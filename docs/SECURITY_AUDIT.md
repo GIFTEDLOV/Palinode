@@ -37,6 +37,12 @@ killed 27/27 targeted mutants with no survivors.
 | Controlled authority fixture was absent for live proof | High | Would force unsafe test weakening | Deployed fictional static fixture and verified exact public bytes; well-known declaration binds the resolved public address | fixture manifest and remote byte parity checks |
 | A 64-slot active-cause set could reject a later stronger finding and suppress its impact | Critical | Yes: a 65th material/invalidating case could revert before recording or escalating its cause | Added a bounded monotonic overflow summary with count, strongest severity, latest strongest case, and rolling commitment; named recovery cannot clear the summary | `test_65th_stronger_cause_is_retained_as_monotonic_overflow_safety_lock` and three active-cause mutation guards |
 
-No Studionet contract deployment was attempted because the resolved public
-deployer address was unfunded. This is an external pre-broadcast gate, not a
-contract failure.
+The later controlled Studionet canary used the exact fixture and source hash
+recorded in `evidence/studionet/`. The single deployment finalized successfully
+and all deterministic setup writes finalized with `FINISHED_WITH_RETURN`.
+The real revocation assessment finalized with `RETRYABLE` / `INCONCLUSIVE` and
+reason `LLM_MALFORMED`; deterministic logic left reliance unchanged, and the
+permissionless retry path finalized without substituting a new notice. No
+recovery case was opened because recovery requires a conclusive material active
+cause. The result is deliberately recorded as a live limitation, not hidden as
+a successful semantic verdict.

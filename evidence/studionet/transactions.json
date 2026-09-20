@@ -1,0 +1,338 @@
+{
+  "balance_wei_before": "0",
+  "chain_id": 61999,
+  "contract_address": "0x712Dbb59F950D0D300d3E89Ed2Ac52db715383E4",
+  "contract_sha256": "eb39390b9da51e70aa54af130c1d45ab392c1b85d327975c462df5d5f10984be",
+  "deployer_address": "0x7e68EAdc3bEDfF1E508D25cC7f1611D1455B4FC4",
+  "tool_versions": {
+    "python": "3.14.3",
+    "genlayer-py": "0.16.3",
+    "genlayer-test": "0.29.2",
+    "genvm-linter": "0.11.0",
+    "genvm_version": "v0.2.16"
+  },
+  "deployment_tx_id": "0xdfc919f95a0276be9381a3e38d871e0b45e4ec14ed4040f13f6257d758098ddc",
+  "network": "studionet",
+  "resubmissions": 0,
+  "rpc_url": "https://studio.genlayer.com/api",
+  "source_sha256": "eb39390b9da51e70aa54af130c1d45ab392c1b85d327975c462df5d5f10984be",
+  "transactions": [
+    {
+      "application_success": true,
+      "execution_result": "FINISHED_WITH_RETURN",
+      "final_status": "FINALIZED",
+      "label": "deployment",
+      "last_observation": {
+        "contract_address": "0x712Dbb59F950D0D300d3E89Ed2Ac52db715383E4",
+        "execution_result": "FINISHED_WITH_RETURN",
+        "result": "MAJORITY_AGREE",
+        "status": "FINALIZED",
+        "tx_data_decoded": null,
+        "tx_id": "0xdfc919f95a0276be9381a3e38d871e0b45e4ec14ed4040f13f6257d758098ddc"
+      },
+      "method": "deploy_contract",
+      "resubmitted": false,
+      "tx_id": "0xdfc919f95a0276be9381a3e38d871e0b45e4ec14ed4040f13f6257d758098ddc"
+    },
+    {
+      "application_success": true,
+      "args": [
+        "https://palinode-fixture.vercel.app",
+        "WELL_KNOWN_ADDRESS_NONCE_V1",
+        "PALINODE_FIXTURE_NONCE_V1"
+      ],
+      "execution_result": "FINISHED_WITH_RETURN",
+      "final_status": "FINALIZED",
+      "label": "register_authority",
+      "last_observation": {
+        "contract_address": null,
+        "execution_result": "FINISHED_WITH_RETURN",
+        "result": "MAJORITY_AGREE",
+        "status": "FINALIZED",
+        "tx_data_decoded": null,
+        "tx_id": "0x64875d863d2927fd8f3ef089413bbf8c48916bd9373d2c339a26b57dac0d3978"
+      },
+      "method": "register_source_authority",
+      "resubmitted": false,
+      "tx_id": "0x64875d863d2927fd8f3ef089413bbf8c48916bd9373d2c339a26b57dac0d3978"
+    },
+    {
+      "application_success": true,
+      "args": [
+        "https://palinode-fixture.vercel.app/evidence/vendor-audit-v1.json",
+        "29084e2b0430225ef85d81da3422c0b4a7bdfdf0357845eaec7e1ac0df45e5c2",
+        241,
+        "fixture-vendor-001",
+        "Fictional audit V1",
+        "f5d0db56d7bf3eb85e2b5ef02f15ec06170db45d1ada322982e8d382c664f4b3"
+      ],
+      "execution_result": "FINISHED_WITH_RETURN",
+      "final_status": "FINALIZED",
+      "label": "register_evidence_v1",
+      "last_observation": {
+        "contract_address": null,
+        "execution_result": "FINISHED_WITH_RETURN",
+        "result": "MAJORITY_AGREE",
+        "status": "FINALIZED",
+        "tx_data_decoded": null,
+        "tx_id": "0xd08200eb087b353c87d84d9ded95cf060ec73bd38e4c8fe63218f4ed2a9f0039"
+      },
+      "method": "register_evidence",
+      "resubmitted": false,
+      "tx_id": "0xd08200eb087b353c87d84d9ded95cf060ec73bd38e4c8fe63218f4ed2a9f0039"
+    },
+    {
+      "application_success": true,
+      "args": [
+        "1592fbc79ab2eac54ff77a793e237e141277b4dffc589b9f7d84388cdd1e709c"
+      ],
+      "execution_result": "FINISHED_WITH_RETURN",
+      "final_status": "FINALIZED",
+      "label": "authenticate_evidence_v1",
+      "last_observation": {
+        "contract_address": null,
+        "execution_result": "FINISHED_WITH_RETURN",
+        "result": "MAJORITY_AGREE",
+        "status": "FINALIZED",
+        "tx_data_decoded": null,
+        "tx_id": "0xe2928a118bda85f6ba9d0aeffaa3245e89681fa21216e9d44bb298b68ac1cc17"
+      },
+      "method": "authenticate_evidence",
+      "resubmitted": false,
+      "tx_id": "0xe2928a118bda85f6ba9d0aeffaa3245e89681fa21216e9d44bb298b68ac1cc17"
+    },
+    {
+      "application_success": true,
+      "args": [
+        "fixture-vendor-001",
+        "Claim depending on fictional audit V1"
+      ],
+      "execution_result": "FINISHED_WITH_RETURN",
+      "final_status": "FINALIZED",
+      "label": "register_claim",
+      "last_observation": {
+        "contract_address": null,
+        "execution_result": "FINISHED_WITH_RETURN",
+        "result": "MAJORITY_AGREE",
+        "status": "FINALIZED",
+        "tx_data_decoded": null,
+        "tx_id": "0xe9778bce42aae1df98422a62a521ac21962a55a0a75870dadf368efc6303f1bb"
+      },
+      "method": "register_claim",
+      "resubmitted": false,
+      "tx_id": "0xe9778bce42aae1df98422a62a521ac21962a55a0a75870dadf368efc6303f1bb"
+    },
+    {
+      "application_success": true,
+      "args": [
+        "fixture-vendor-001",
+        "Decision depending on the claim"
+      ],
+      "execution_result": "FINISHED_WITH_RETURN",
+      "final_status": "FINALIZED",
+      "label": "register_decision",
+      "last_observation": {
+        "contract_address": null,
+        "execution_result": "FINISHED_WITH_RETURN",
+        "result": "MAJORITY_AGREE",
+        "status": "FINALIZED",
+        "tx_data_decoded": null,
+        "tx_id": "0xeab037d3b72794e25a09a09b2c77285d3bf5718d570fcd364be8c0c7afa28805"
+      },
+      "method": "register_decision",
+      "resubmitted": false,
+      "tx_id": "0xeab037d3b72794e25a09a09b2c77285d3bf5718d570fcd364be8c0c7afa28805"
+    },
+    {
+      "application_success": true,
+      "args": [
+        "1592fbc79ab2eac54ff77a793e237e141277b4dffc589b9f7d84388cdd1e709c",
+        "1445241cd0152e9abdc984443891a4d68f885cafa2f7da2d418d226d7bca4d96",
+        "SUPPORTS"
+      ],
+      "execution_result": "FINISHED_WITH_RETURN",
+      "final_status": "FINALIZED",
+      "label": "edge_evidence_claim",
+      "last_observation": {
+        "contract_address": null,
+        "execution_result": "FINISHED_WITH_RETURN",
+        "result": "MAJORITY_AGREE",
+        "status": "FINALIZED",
+        "tx_data_decoded": null,
+        "tx_id": "0xac99177d8f5781729fe755141fb782d55075103362b32f5052854c321e3a83a7"
+      },
+      "method": "register_dependency",
+      "resubmitted": false,
+      "tx_id": "0xac99177d8f5781729fe755141fb782d55075103362b32f5052854c321e3a83a7"
+    },
+    {
+      "application_success": true,
+      "args": [
+        "1445241cd0152e9abdc984443891a4d68f885cafa2f7da2d418d226d7bca4d96",
+        "24b2d5ce9941acaa9da149f4521bed8c4b97076a3e775be0e58b569d2ad6a669",
+        "REQUIRES"
+      ],
+      "execution_result": "FINISHED_WITH_RETURN",
+      "final_status": "FINALIZED",
+      "label": "edge_claim_decision",
+      "last_observation": {
+        "contract_address": null,
+        "execution_result": "FINISHED_WITH_RETURN",
+        "result": "MAJORITY_AGREE",
+        "status": "FINALIZED",
+        "tx_data_decoded": null,
+        "tx_id": "0xd3fc8591f057852c2f669afae275a085de136b1d04290e3038bbbb6f16f8394c"
+      },
+      "method": "register_dependency",
+      "resubmitted": false,
+      "tx_id": "0xd3fc8591f057852c2f669afae275a085de136b1d04290e3038bbbb6f16f8394c"
+    },
+    {
+      "application_success": true,
+      "args": [
+        "1592fbc79ab2eac54ff77a793e237e141277b4dffc589b9f7d84388cdd1e709c",
+        "f5d0db56d7bf3eb85e2b5ef02f15ec06170db45d1ada322982e8d382c664f4b3",
+        "https://palinode-fixture.vercel.app/notices/vendor-audit-v1-revoked.json",
+        "0a735d8344897f0406bf84f2bd62b9bae55898d0e45ca670a001597a6a53492f",
+        278,
+        "WITHDRAWN",
+        "Controlled fictional fixture revocation"
+      ],
+      "execution_result": "FINISHED_WITH_RETURN",
+      "final_status": "FINALIZED",
+      "label": "open_revocation",
+      "last_observation": {
+        "contract_address": null,
+        "execution_result": "FINISHED_WITH_RETURN",
+        "result": "MAJORITY_AGREE",
+        "status": "FINALIZED",
+        "tx_data_decoded": null,
+        "tx_id": "0x02f77fd02f2d63f9523d9f75f4634441eb68ca3390960f11024d20b6367bc5f7"
+      },
+      "method": "open_revocation_case",
+      "resubmitted": false,
+      "tx_id": "0x02f77fd02f2d63f9523d9f75f4634441eb68ca3390960f11024d20b6367bc5f7"
+    },
+    {
+      "application_success": true,
+      "args": [
+        "c33a6a26f342279d29676b59c6242959cf219c1a30449508ea5f45341209b699"
+      ],
+      "execution_result": "FINISHED_WITH_RETURN",
+      "final_status": "FINALIZED",
+      "label": "assess_revocation",
+      "last_observation": {
+        "contract_address": null,
+        "execution_result": "FINISHED_WITH_RETURN",
+        "result": "MAJORITY_AGREE",
+        "status": "FINALIZED",
+        "tx_data_decoded": null,
+        "tx_id": "0xed7831679d5b96a1c93dded5dc128e6446aa0f3ce06d10860bef0460de2b5441"
+      },
+      "method": "assess_revocation",
+      "resubmitted": false,
+      "tx_id": "0xed7831679d5b96a1c93dded5dc128e6446aa0f3ce06d10860bef0460de2b5441"
+    },
+    {
+      "application_success": true,
+      "args": [
+        "https://palinode-fixture.vercel.app/evidence/vendor-audit-v2.json",
+        "c005ac1d5de56b14cb95fbacf6ecddc81386846a3df5bd5a3e28f0498b509ab3",
+        328,
+        "fixture-vendor-001",
+        "Fictional audit V2 corrected",
+        "f5d0db56d7bf3eb85e2b5ef02f15ec06170db45d1ada322982e8d382c664f4b3"
+      ],
+      "execution_result": "FINISHED_WITH_RETURN",
+      "final_status": "FINALIZED",
+      "label": "register_evidence_v2",
+      "last_observation": {
+        "contract_address": null,
+        "execution_result": "FINISHED_WITH_RETURN",
+        "result": "MAJORITY_AGREE",
+        "status": "FINALIZED",
+        "tx_data_decoded": null,
+        "tx_id": "0xdb716bb3e70fc1c7c008a6283201ed745d7dca69d6b55e3f1ec1ddbacc800d72"
+      },
+      "method": "register_evidence",
+      "resubmitted": false,
+      "tx_id": "0xdb716bb3e70fc1c7c008a6283201ed745d7dca69d6b55e3f1ec1ddbacc800d72"
+    },
+    {
+      "application_success": true,
+      "args": [
+        "b8d93db902d8e89673c73468f39c51e3e531997af0293594326231267b05c15a"
+      ],
+      "execution_result": "FINISHED_WITH_RETURN",
+      "final_status": "FINALIZED",
+      "label": "authenticate_evidence_v2",
+      "last_observation": {
+        "contract_address": null,
+        "execution_result": "FINISHED_WITH_RETURN",
+        "result": "MAJORITY_AGREE",
+        "status": "FINALIZED",
+        "tx_data_decoded": null,
+        "tx_id": "0xe1e9b20400d07ce2125f5ea43e6c55f5ef883d64dd179bb08b5aca5b4fcdd27e"
+      },
+      "method": "authenticate_evidence",
+      "resubmitted": false,
+      "tx_id": "0xe1e9b20400d07ce2125f5ea43e6c55f5ef883d64dd179bb08b5aca5b4fcdd27e"
+    },
+    {
+      "application_success": true,
+      "args": [
+        "1592fbc79ab2eac54ff77a793e237e141277b4dffc589b9f7d84388cdd1e709c",
+        "b8d93db902d8e89673c73468f39c51e3e531997af0293594326231267b05c15a"
+      ],
+      "execution_result": "FINISHED_WITH_RETURN",
+      "final_status": "FINALIZED",
+      "label": "link_successor",
+      "last_observation": {
+        "contract_address": null,
+        "execution_result": "FINISHED_WITH_RETURN",
+        "result": "MAJORITY_AGREE",
+        "status": "FINALIZED",
+        "tx_data_decoded": null,
+        "tx_id": "0xb3176adfd80f860be2da2bfea3083defae9c357cdf8c7c9dba8972580f7b5f79"
+      },
+      "method": "link_evidence_successor",
+      "resubmitted": false,
+      "tx_id": "0xb3176adfd80f860be2da2bfea3083defae9c357cdf8c7c9dba8972580f7b5f79"
+    },
+    {
+      "application_success": true,
+      "args": [
+        "c33a6a26f342279d29676b59c6242959cf219c1a30449508ea5f45341209b699",
+        "",
+        ""
+      ],
+      "execution_result": "FINISHED_WITH_RETURN",
+      "final_status": "FINALIZED",
+      "label": "retry_revocation",
+      "last_observation": {
+        "contract_address": null,
+        "execution_result": "FINISHED_WITH_RETURN",
+        "result": "MAJORITY_AGREE",
+        "status": "FINALIZED",
+        "tx_data_decoded": null,
+        "tx_id": "0x1a1ad202fc4e77ddced1e68b1bd7c1f22331dff1c98ae6c4f12ddd7280f66690"
+      },
+      "method": "retry_revocation_case",
+      "resubmitted": false,
+      "tx_id": "0x1a1ad202fc4e77ddced1e68b1bd7c1f22331dff1c98ae6c4f12ddd7280f66690"
+    }
+  ],
+  "well_known": {
+    "binding_matches": true,
+    "byte_length": 227,
+    "declaration": {
+      "authority_address": "0x7e68EAdc3bEDfF1E508D25cC7f1611D1455B4FC4",
+      "canonical_origin": "https://palinode-fixture.vercel.app",
+      "nonce": "PALINODE_FIXTURE_NONCE_V1",
+      "palinode": "1",
+      "verification_policy": "WELL_KNOWN_ADDRESS_NONCE_V1"
+    },
+    "sha256": "037181c4cfad5a5eed35d09036d9c5acfa605b185eeb0f73cbd4b067581bd635",
+    "status": 200
+  }
+}

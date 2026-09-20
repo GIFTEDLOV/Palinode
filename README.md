@@ -21,12 +21,12 @@ operator and is not an adversarially shared GenLayer consensus outcome.
 
 This phase contains one canonical Intelligent Contract at
 [contracts/palinode.py](contracts/palinode.py). There is no frontend, indexer,
-deployment, ERC20 integration, cross-contract messaging, or GitHub repository
-in this phase. The local security closure, cause-aware recovery lifecycle,
-bounded pagination, adversarial tests, mutation harness, and integration
-harness are implemented. Live authority validation and a Studionet canary
-remain gated on a controlled HTTPS fixture, preflight funding, and final
-network lifecycle checks.
+ERC20 integration, cross-contract messaging, or GitHub repository in this
+phase. The local security closure, cause-aware recovery lifecycle, bounded
+pagination, adversarial tests, mutation harness, integration harness, and one
+controlled Studionet canary are implemented. The live revocation assessment
+returned a recorded `RETRYABLE`/`INCONCLUSIVE` result, so live impact and
+recovery remain correctly unclaimed until a later explicit reassessment.
 
 The target is stable Studionet:
 
@@ -34,8 +34,8 @@ The target is stable Studionet:
 - Chain ID: `61999`
 - network alias: `studionet`
 
-`studio-dev`, chain ID `61997`, Bradbury, and deployment are intentionally out
-of scope for this phase.
+`studio-dev`, chain ID `61997`, and Bradbury remain intentionally out of scope
+for this phase.
 
 ## What GenLayer decides
 
@@ -169,7 +169,9 @@ use `genlayer-test` mocks for web and LLM calls; they do not contact Studionet.
 The integration suite exercises the supported local GLSim JSON-RPC surface and
 reports runner-specific skips separately; local GLSim is not evidence of
 Studionet deployment compatibility. See `docs/INTEGRATION_TESTING.md` and
-`docs/DEPLOYMENT.md`.
+`docs/DEPLOYMENT.md`. The resumable hosted canary harness is
+`scripts/studionet_canary.py`; it persists transaction IDs and never
+automatically resubmits them.
 
 ## Known limitations
 

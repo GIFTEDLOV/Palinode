@@ -25,3 +25,12 @@ a canary.
 The hosted canary must use the documented `genlayer-py` stable client profile
 for `https://studio.genlayer.com/api` and chain 61999, persist the original
 transaction ID, and require both final consensus and successful execution.
+
+The controlled canary used `scripts/studionet_canary.py` and persisted every
+application transaction in `evidence/studionet/transactions.json`. Deployment
+and deterministic graph/authority/evidence operations finalized successfully.
+The revocation assessment reached real Studionet consensus as
+`RETRYABLE`/`INCONCLUSIVE` (`LLM_MALFORMED`); the retry path was exercised, no
+impact was applied, and recovery was not opened because its material-cause
+precondition was not met. This is a live failure result, not a test failure or
+an authorization to manufacture `MATERIAL`.

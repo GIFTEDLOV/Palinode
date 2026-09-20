@@ -150,12 +150,24 @@ def transaction_status(transaction: dict[str, Any]) -> tuple[str, str]:
 def tx_snapshot(client: Any, tx_id: str) -> dict[str, Any]:
     tx = jsonable(client.get_transaction(transaction_hash=tx_id))
     status, execution = transaction_status(tx)
+    if execution == "NOT_VOTED":
+        validators = ((tx.get("consensus_data") or {}).get("validators") or [])
+        validator_results = [
+            str(item.get("execution_result", "")).upper()
+            for item in validators
+            if isinstance(item, dict) and str(item.get("vote", "")).lower() == "agree"
+        ]
+        if validator_results and all(item == "SUCCESS" for item in validator_results):
+            execution = "FINISHED_WITH_RETURN"
+        elif validator_results and any(item == "ERROR" for item in validator_results):
+            execution = "FINISHED_WITH_ERROR"
     return {
         "status": status,
         "execution_result": execution,
         "result": tx.get("result_name", tx.get("result")),
         "tx_id": tx.get("tx_id", tx_id),
         "tx_data_decoded": tx.get("tx_data_decoded"),
+        "contract_address": (tx.get("data") or {}).get("contract_address"),
     }
 
 
@@ -274,7 +286,7 @@ def deployment(client: Any, account: Any) -> None:
         save_state(_STATE)
     snapshot = wait_final(client, account, tx_id, record)
     decoded = snapshot.get("tx_data_decoded") or {}
-    contract_address = decoded.get("contract_address")
+    contract_address = snapshot.get("contract_address") or decoded.get("contract_address")
     if not contract_address:
         raise RuntimeError("finalized deployment did not expose contract_address in tx_data_decoded")
     _STATE["contract_address"] = contract_address
@@ -359,6 +371,12 @@ def run_canary() -> None:
     root_state = read_contract(client, account, "get_node_record", [evidence_v1])
     claim_state = read_contract(client, account, "get_node_record", [claim_id])
     decision_state = read_contract(client, account, "get_node_record", [decision_id])
+    retry_tx = None
+    if not material:
+        retry_tx = submit_write(client, account, "retry_revocation", "retry_revocation_case", [case_id, "", ""])
+        case_after_retry = read_contract(client, account, "get_revocation_case", [case_id])
+    else:
+        case_after_retry = None
 
     evidence_v2_tx = submit_write(client, account, "register_evidence_v2", "register_evidence", [ARTIFACTS["v2"]["uri"], ARTIFACTS["v2"]["sha256"], ARTIFACTS["v2"]["byte_length"], "fixture-vendor-001", "Fictional audit V2 corrected", authority_id])
     evidence_v2 = newest_id(client, account, "get_node_ids_page")
@@ -391,7 +409,7 @@ def run_canary() -> None:
         "evidence_v1": {"id": evidence_v1, "record": v1_record, "authentication_tx": auth_tx["tx_id"]},
         "evidence_v2": {"id": evidence_v2, "record": v2_record, "authentication_tx": auth_v2_tx["tx_id"]},
         "graph": {"claim_id": claim_id, "decision_id": decision_id, "edges": edges},
-        "revocation": {"case_id": case_id, "case_before": case_before, "case_after_assessment": case_after_assessment, "case_final": case_final, "propagation": propagation, "root": root_state, "claim": claim_state, "decision": decision_state},
+        "revocation": {"case_id": case_id, "case_before": case_before, "case_after_assessment": case_after_assessment, "case_final": case_final, "case_after_retry": case_after_retry, "propagation": propagation, "root": root_state, "claim": claim_state, "decision": decision_state},
         "recovery": {"case_id": recovery_case_id, "case": recovery},
         "historical_lineage_verified": bool(root_state.get("historical_validity") and recovery is not None and recovery.get("successor_evidence_id") == evidence_v2),
         "finality_restart_test": {"transaction_id": assess_tx["tx_id"], "resumed_without_resubmission": True, "resume_process_output": restart_process.stdout.strip()},
