@@ -1,0 +1,38 @@
+{
+  "targets": {
+    "production": {
+      "ids": {
+        "evidence": "/app/evidence/1592fbc79ab2eac54ff77a793e237e141277b4dffc589b9f7d84388cdd1e709c",
+        "decision": "/app/decisions/24b2d5ce9941acaa9da149f4521bed8c4b97076a3e775be0e58b569d2ad6a669",
+        "revocation": "/app/revocations/c33a6a26f342279d29676b59c6242959cf219c1a30449508ea5f45341209b699",
+        "recovery": "/app/recoveries/c0b134d70e427a2d86e0f08de0372af46630de2df74b8c4410cf3a6c42de2b61",
+        "authority": "/app/authorities/f5d0db56d7bf3eb85e2b5ef02f15ec06170db45d1ada322982e8d382c664f4b3"
+      },
+      "routeCount": 94,
+      "consoleErrors": 0
+    }
+  },
+  "assertions": [],
+  "screenshots": [
+    "artifacts\\final-screenshots\\01-landing-desktop.png",
+    "artifacts\\final-screenshots\\10-mobile-landing.png",
+    "artifacts\\final-screenshots\\02-overview.png",
+    "artifacts\\final-screenshots\\03-global-graph.png",
+    "artifacts\\final-screenshots\\11-mobile-graph.png",
+    "artifacts\\final-screenshots\\09-proof-security.png",
+    "artifacts\\final-screenshots\\05-evidence-detail.png",
+    "artifacts\\final-screenshots\\04-blast-radius.png",
+    "artifacts\\final-screenshots\\06-revocation-command-center.png",
+    "artifacts\\final-screenshots\\12-mobile-revocation.png",
+    "artifacts\\final-screenshots\\07-recovery-command-center.png",
+    "artifacts\\final-screenshots\\08-authority-detail.png"
+  ],
+  "wallet": {
+    "walletConnected": "0x111111…111111",
+    "wrongNetwork": "WRONG NETWORK",
+    "wrongNetworkWrite": "Switch wallet to Studionet (chain 61999) before sending a write.",
+    "switchedAccount": "0x222222…222222",
+    "correctNetwork": "Studionet / 61999",
+    "walletDisconnected": "CONNECT WALLET"
+  }
+}
