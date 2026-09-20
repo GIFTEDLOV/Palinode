@@ -21,7 +21,9 @@ def test_generated_forward_graphs_preserve_creation_order(direct_deploy):
             # The generated set can repeat an identity; duplicate rejection is
             # part of the invariant and does not alter the forward-order proof.
             pass
-    for edge_id in contract.get_edge_ids():
+    edge_page = contract.get_edge_ids_page(0, 64)
+    for index in range(int(edge_page["count"])):
+        edge_id = edge_page["slot_" + str(index)]
         edge = contract.get_dependency_record(edge_id)
         parent = contract.get_node_record(edge["parent_node_id"])
         child = contract.get_node_record(edge["child_node_id"])

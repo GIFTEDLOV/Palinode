@@ -70,7 +70,9 @@ def test_registers_all_node_types_and_exposes_immutable_metadata(direct_vm, dire
     assert all(record["status"] == "ACTIVE" for record in records)
     assert records[0]["assessment_status"] == "UNASSESSED"
     assert all(record["assessment_status"] == "UNASSESSED" for record in records)
-    assert len(set(contract.get_node_ids())) == 5
+    page = contract.get_node_ids_page(0, 64)
+    assert int(page["count"]) == 5
+    assert len({page["slot_" + str(index)] for index in range(5)}) == 5
 
 
 def test_duplicate_and_malformed_registration_reverts(direct_vm, direct_deploy):

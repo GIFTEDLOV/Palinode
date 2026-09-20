@@ -108,7 +108,7 @@ MUTATIONS = (
     ),
     Mutation(
         "status_downgrade_prevention",
-        "if severity[target_status] <= severity[current]:",
+        "if self._ordinary_severity(target_status) <= self._ordinary_severity(current):",
         "if False:",
         "tests/adversarial/test_security_closure.py::test_overlapping_case_queues_are_isolated_when_both_touch_same_descendant",
     ),
@@ -123,6 +123,72 @@ MUTATIONS = (
         "if not digest_matches:",
         "if False:",
         "tests/direct/test_steward_hardening.py::test_authenticate_evidence_is_the_only_cleared_path_and_checks_exact_identity",
+    ),
+    Mutation(
+        "recovery_successor_clearance",
+        "self.node_assessment_status[successor_evidence_id] == ASSESS_CLEARED",
+        "True",
+        "tests/adversarial/test_capacity_and_recovery.py::test_recovery_rejects_wrong_or_uncleared_successors_and_preserves_identity",
+    ),
+    Mutation(
+        "recovery_lineage_binding",
+        "affected_node_id in self.evidence_successor\n            and self.evidence_successor[affected_node_id] == successor_evidence_id",
+        "True",
+        "tests/adversarial/test_capacity_and_recovery.py::test_recovery_rejects_wrong_or_uncleared_successors_and_preserves_identity",
+    ),
+    Mutation(
+        "recovery_material_cause_guard",
+        "self.case_materiality[adverse_case_id] == VERDICT_MATERIAL",
+        "True",
+        "tests/adversarial/test_capacity_and_recovery.py::test_recovery_requires_material_cause_and_rejects_unsupported_effect",
+    ),
+    Mutation(
+        "recovery_case_identity_guard",
+        "identity not in self.recovery_identity_to_id",
+        "True",
+        "tests/adversarial/test_capacity_and_recovery.py::test_recovery_requires_cleared_linked_successor_and_is_permissionless",
+    ),
+    Mutation(
+        "recovery_effect_guard",
+        'recovery_effect in (RECOVERY_EFFECT_REINSTATE, RECOVERY_EFFECT_SUPERSEDE),\n            "unsupported recovery effect",',
+        'True,\n            "unsupported recovery effect",',
+        "tests/adversarial/test_capacity_and_recovery.py::test_recovery_requires_material_cause_and_rejects_unsupported_effect",
+    ),
+    Mutation(
+        "recovery_no_change_guard",
+        "if recovery_effect == RECOVERY_EFFECT_NO_CHANGE:",
+        "if False:",
+        "tests/adversarial/test_capacity_and_recovery.py::test_recovery_is_consensus_backed_and_owner_cannot_self_reinstate",
+    ),
+    Mutation(
+        "recovery_cause_registration",
+        "self._register_active_cause(node_id, case_id, target_status)",
+        'self._require(False, "mutant recovery cause")',
+        "tests/adversarial/test_capacity_and_recovery.py::test_two_active_causes_require_two_successful_recoveries",
+    ),
+    Mutation(
+        "recovery_cause_key_binding",
+        "cause_key = node_id + \"|\" + adverse_case_id",
+        "cause_key = node_id",
+        "tests/adversarial/test_capacity_and_recovery.py::test_single_cause_recovery_restores_root_and_descendant",
+    ),
+    Mutation(
+        "recovery_cause_slot_binding",
+        "if causes[index] == adverse_case_id:",
+        "if True:",
+        "tests/adversarial/test_capacity_and_recovery.py::test_two_active_causes_require_two_successful_recoveries",
+    ),
+    Mutation(
+        "recovery_retry_fail_closed",
+        "if result_status == RESULT_RETRYABLE:",
+        "if False:",
+        "tests/adversarial/test_capacity_and_recovery.py::test_recovery_failure_inconclusive_and_source_unavailable_are_retryable",
+    ),
+    Mutation(
+        "recovery_max_steps_enforcement",
+        "max_steps <= u256(MAX_RECOVERY_STEPS_PER_CALL)",
+        "True",
+        "tests/adversarial/test_capacity_and_recovery.py::test_recovery_processing_is_bounded_resumable_and_idempotent",
     ),
 )
 

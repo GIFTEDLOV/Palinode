@@ -36,6 +36,18 @@
       "ret": "string",
       "payable": false
     },
+    "assess_recovery": {
+      "params": [
+        [
+          "recovery_id",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    },
     "assess_revocation": {
       "params": [
         [
@@ -60,6 +72,19 @@
       "ret": "null",
       "payable": false
     },
+    "get_active_causes": {
+      "params": [
+        [
+          "node_id",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": {
+        "$dict": "string"
+      }
+    },
     "get_assessment_history": {
       "params": [
         [
@@ -73,25 +98,39 @@
         "$dict": "string"
       }
     },
-    "get_authority_ids": {
-      "params": [],
+    "get_authority_ids_page": {
+      "params": [
+        [
+          "cursor",
+          "int"
+        ],
+        [
+          "limit",
+          "int"
+        ]
+      ],
       "kwparams": {},
       "readonly": true,
-      "ret": [
-        {
-          "$rep": "string"
-        }
-      ]
+      "ret": {
+        "$dict": "string"
+      }
     },
-    "get_case_ids": {
-      "params": [],
+    "get_case_ids_page": {
+      "params": [
+        [
+          "cursor",
+          "int"
+        ],
+        [
+          "limit",
+          "int"
+        ]
+      ],
       "kwparams": {},
       "readonly": true,
-      "ret": [
-        {
-          "$rep": "string"
-        }
-      ]
+      "ret": {
+        "$dict": "string"
+      }
     },
     "get_dependency_record": {
       "params": [
@@ -106,15 +145,22 @@
         "$dict": "string"
       }
     },
-    "get_edge_ids": {
-      "params": [],
+    "get_edge_ids_page": {
+      "params": [
+        [
+          "cursor",
+          "int"
+        ],
+        [
+          "limit",
+          "int"
+        ]
+      ],
       "kwparams": {},
       "readonly": true,
-      "ret": [
-        {
-          "$rep": "string"
-        }
-      ]
+      "ret": {
+        "$dict": "string"
+      }
     },
     "get_evidence_mirrors": {
       "params": [
@@ -144,15 +190,22 @@
         "$dict": "string"
       }
     },
-    "get_node_ids": {
-      "params": [],
+    "get_node_ids_page": {
+      "params": [
+        [
+          "cursor",
+          "int"
+        ],
+        [
+          "limit",
+          "int"
+        ]
+      ],
       "kwparams": {},
       "readonly": true,
-      "ret": [
-        {
-          "$rep": "string"
-        }
-      ]
+      "ret": {
+        "$dict": "string"
+      }
     },
     "get_node_record": {
       "params": [
@@ -181,6 +234,62 @@
           "$rep": "string"
         }
       ]
+    },
+    "get_recovery_case": {
+      "params": [
+        [
+          "recovery_id",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": {
+        "$dict": "string"
+      }
+    },
+    "get_recovery_ids_page": {
+      "params": [
+        [
+          "cursor",
+          "int"
+        ],
+        [
+          "limit",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": {
+        "$dict": "string"
+      }
+    },
+    "get_recovery_queue_state": {
+      "params": [
+        [
+          "recovery_id",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": {
+        "$dict": "string"
+      }
+    },
+    "get_recovery_retry_telemetry": {
+      "params": [
+        [
+          "recovery_id",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": {
+        "$dict": "string"
+      }
     },
     "get_retry_telemetry": {
       "params": [
@@ -267,6 +376,30 @@
       "ret": "null",
       "payable": false
     },
+    "open_recovery_case": {
+      "params": [
+        [
+          "affected_node_id",
+          "string"
+        ],
+        [
+          "successor_evidence_id",
+          "string"
+        ],
+        [
+          "adverse_case_id",
+          "string"
+        ],
+        [
+          "opening_note",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "string",
+      "payable": false
+    },
     "open_revocation_case": {
       "params": [
         [
@@ -307,6 +440,22 @@
       "params": [
         [
           "case_id",
+          "string"
+        ],
+        [
+          "max_steps",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "int",
+      "payable": false
+    },
+    "process_recovery_impact": {
+      "params": [
+        [
+          "recovery_id",
           "string"
         ],
         [

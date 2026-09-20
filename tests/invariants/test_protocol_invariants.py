@@ -58,7 +58,9 @@ def test_node_sequences_prove_dag_for_generated_forward_edges(direct_vm, direct_
     records = [contract.get_node_record(node_id) for node_id in nodes]
     sequences = [int(record["creation_sequence"]) for record in records]
     assert sequences == sorted(sequences)
-    for edge_id in contract.get_edge_ids():
+    edge_page = contract.get_edge_ids_page(0, 64)
+    for index in range(int(edge_page["count"])):
+        edge_id = edge_page["slot_" + str(index)]
         edge = contract.get_dependency_record(edge_id)
         parent_sequence = int(contract.get_node_record(edge["parent_node_id"])["creation_sequence"])
         child_sequence = int(contract.get_node_record(edge["child_node_id"])["creation_sequence"])
@@ -82,8 +84,8 @@ def test_status_machine_rejects_skips_and_allows_only_declared_edges(direct_vm, 
     with direct_vm.expect_revert("status transition is not allowed"):
         contract._transition_node(node_id, "REINSTATED", "TEST", "")
     contract._transition_node(node_id, "QUESTIONED", "TEST", "")
-    with direct_vm.expect_revert("status transition is not allowed"):
-        contract._transition_node(node_id, "REINSTATED", "TEST", "")
+    contract._transition_node(node_id, "REINSTATED", "TEST", "")
+    assert contract.get_node_record(node_id)["status"] == "REINSTATED"
     contract._transition_node(node_id, "UNDER_REVIEW", "TEST", "")
     contract._transition_node(node_id, "QUARANTINED", "TEST", "")
     contract._transition_node(node_id, "REINSTATED", "TEST", "")
