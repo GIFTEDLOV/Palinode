@@ -17,12 +17,13 @@ itself retrieve and contextualize mutable, unstructured evidence. An ordinary
 backend can perform that semantic work, but its answer is controlled by one
 operator and is not an adversarially shared GenLayer consensus outcome.
 
-## Phase 2.7 status
+## Phase 3 status
 
 This phase contains one canonical Intelligent Contract at
-[contracts/palinode.py](contracts/palinode.py). There is no frontend, indexer,
-ERC20 integration, cross-contract messaging, or GitHub repository in this
-phase. The local security closure, cause-aware recovery lifecycle, bounded
+[contracts/palinode.py](contracts/palinode.py). The derived application lives
+under [frontend](frontend); it does not replace canonical contract state. There
+is no indexer database, ERC20 integration, cross-contract messaging, or GitHub
+repository in this phase. The local security closure, cause-aware recovery lifecycle, bounded
 pagination, adversarial tests, mutation harness, integration harness, and one
   controlled Studionet canary are implemented. Canary-v1 and canary-v2 remain
   archived historical deployments: v1 recorded a malformed-output failure and
@@ -32,7 +33,8 @@ pagination, adversarial tests, mutation harness, integration harness, and one
   bounded propagation completed, and the controlled successor recovery
   finalized as `SUPERSEDE`. The V3 address and readbacks are archived under
   `evidence/studionet/canary-v3/`; see
-  [docs/CONTRACT_FREEZE.md](docs/CONTRACT_FREEZE.md).
+  [docs/CONTRACT_FREEZE.md](docs/CONTRACT_FREEZE.md). The frontend targets the
+  same frozen address and source hash and does not modify the contract.
 
 The target is stable Studionet:
 
@@ -158,6 +160,34 @@ final. The client state model therefore keeps separate fields for submission,
 consensus acceptance, execution success, and finalization, and resumes polling
 the same transaction ID after timeout instead of automatically resubmitting.
 
+## Frontend application
+
+The React/TypeScript/Vite application in `frontend/` reads bounded canonical
+pages from the frozen Studionet contract and presents the dependency graph,
+blast radius, evidence authentication versus reliance, revocation and
+recovery command centers, authority records, activity, proof, and integration
+guidance. Browser writes use the frozen ABI and persist GenLayer transaction
+IDs locally; the client requires final protocol state plus
+`FINISHED_WITH_RETURN` before displaying a successful write.
+
+Run it locally:
+
+```powershell
+cd frontend
+npm install
+npm run typecheck
+npm test
+npm run lint
+npm run build
+npm run dev
+```
+
+Wallet connection is optional for read-only exploration; write actions require
+a compatible wallet on Studionet. The controlled static fixture at
+`https://palinode-fixture.vercel.app` remains separate from the application.
+The production frontend is deployed at
+`https://palinode-app.vercel.app`.
+
 ## Development commands
 
 From PowerShell in the repository root:
@@ -185,8 +215,9 @@ automatically resubmits them.
 
 ## Known limitations
 
-- The protocol still supports one canonical contract only and does not expose
-  an indexer or UI.
+- The protocol still supports one canonical contract only. The frontend is a
+  derived client and does not replace a purpose-built indexer for large-scale
+  history search.
 - Semantic adjudication relies on independently retrieved public HTTPS pages;
   page availability, page mutation, model disagreement, and source ambiguity
   remain explicit failure or inconclusive paths.
