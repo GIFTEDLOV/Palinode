@@ -93,7 +93,8 @@
       }
     ]
   },
-  "historical_lineage_verified": false,
+  "historical_lineage_verified": true,
+  "active_cause_composition_verified": "LOCAL_TESTS_PASS_LIVE_NOT_REACHED_BECAUSE_REVOCATION_WAS_INCONCLUSIVE",
   "network": "studionet",
   "recovery": {
     "case": null,

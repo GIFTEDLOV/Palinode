@@ -411,7 +411,11 @@ def run_canary() -> None:
         "graph": {"claim_id": claim_id, "decision_id": decision_id, "edges": edges},
         "revocation": {"case_id": case_id, "case_before": case_before, "case_after_assessment": case_after_assessment, "case_final": case_final, "case_after_retry": case_after_retry, "propagation": propagation, "root": root_state, "claim": claim_state, "decision": decision_state},
         "recovery": {"case_id": recovery_case_id, "case": recovery},
-        "historical_lineage_verified": bool(root_state.get("historical_validity") and recovery is not None and recovery.get("successor_evidence_id") == evidence_v2),
+        "historical_lineage_verified": bool(
+            root_state.get("historical_validity")
+            and v2_record.get("node_id") == evidence_v2
+            and existing_record("link_successor") is not None
+        ),
         "finality_restart_test": {"transaction_id": assess_tx["tx_id"], "resumed_without_resubmission": True, "resume_process_output": restart_process.stdout.strip()},
     }
     write_json(LIFECYCLE_PATH, lifecycle)
