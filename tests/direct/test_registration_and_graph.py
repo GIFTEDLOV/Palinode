@@ -1,11 +1,12 @@
 import hashlib
 import json
+import os
 import re
 
 import pytest
 
 
-CONTRACT = "contracts/palinode.py"
+CONTRACT = os.environ.get("PALINODE_CONTRACT", "contracts/palinode.py")
 EVIDENCE_URI = "https://evidence.example/e-1"
 EVIDENCE_ORIGIN = "https://evidence.example"
 AUTHORITY_POLICY = "WELL_KNOWN_ADDRESS_NONCE_V1"
@@ -180,3 +181,4 @@ def test_no_owner_or_arbitrary_status_setter_is_exposed(direct_deploy):
     assert not hasattr(contract, "set_node_status")
     assert not hasattr(contract, "override_verdict")
     assert not hasattr(contract, "delete_node")
+import os

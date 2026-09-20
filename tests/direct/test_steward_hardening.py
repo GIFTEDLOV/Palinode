@@ -1,11 +1,12 @@
 import hashlib
 import json
+import os
 import re
 
 import pytest
 
 
-CONTRACT = "contracts/palinode.py"
+CONTRACT = os.environ.get("PALINODE_CONTRACT", "contracts/palinode.py")
 EVIDENCE_ORIGIN = "https://evidence.example"
 NOTICE_ORIGIN = "https://notice.example"
 EVIDENCE_URI = EVIDENCE_ORIGIN + "/e-1"
@@ -274,8 +275,10 @@ def test_source_unavailable_has_permissionless_mirror_recovery_without_identity_
     notice_mirror = NOTICE_ORIGIN + "/mirror-n-1"
     direct_vm.mock_web(re.escape(evidence_mirror), {"status": 200, "body": EVIDENCE_BODY})
     direct_vm.mock_web(re.escape(notice_mirror), {"status": 200, "body": notice_body})
+    evidence_mirror_id = contract.add_evidence_mirror(evidence_id, evidence_mirror)
+    notice_mirror_id = contract.add_notice_mirror(case_id, notice_mirror)
     with direct_vm.prank("0x" + "c" * 40):
-        contract.retry_revocation_case(case_id, evidence_mirror, notice_mirror)
+        contract.retry_revocation_case(case_id, evidence_mirror_id, notice_mirror_id)
     recovered = contract.get_revocation_case(case_id)
     assert recovered["notice_uri"] == NOTICE_URI
     assert recovered["notice_sha256"] == locked["notice_sha256"]
@@ -299,11 +302,9 @@ def test_mirror_mismatch_cannot_rewrite_locked_identity(direct_vm, direct_deploy
     contract.assess_revocation(case_id)
     before = contract.get_revocation_case(case_id)
     evidence_mirror = EVIDENCE_ORIGIN + "/bad-mirror"
-    notice_mirror = NOTICE_ORIGIN + "/bad-notice-mirror"
     direct_vm.mock_web(re.escape(evidence_mirror), {"status": 200, "body": b"tampered"})
-    direct_vm.mock_web(re.escape(notice_mirror), {"status": 200, "body": notice_body})
-    with direct_vm.expect_revert("mirror content does not match locked identity"):
-        contract.retry_revocation_case(case_id, evidence_mirror, notice_mirror)
+    with direct_vm.expect_revert("mirror content does not match locked evidence identity"):
+        contract.add_evidence_mirror(evidence_id, evidence_mirror)
     after = contract.get_revocation_case(case_id)
     assert after["notice_uri"] == before["notice_uri"]
     assert after["notice_sha256"] == before["notice_sha256"]
@@ -323,3 +324,101 @@ def test_assessment_state_machine_has_no_arbitrary_skip(direct_vm, direct_deploy
     contract._transition_assessment(evidence_id, "PENDING", "")
     contract._transition_assessment(evidence_id, "SOURCE_UNAVAILABLE", "")
     assert contract.get_node_record(evidence_id)["assessment_status"] == "SOURCE_UNAVAILABLE"
+
+
+def test_authenticate_evidence_is_the_only_cleared_path_and_checks_exact_identity(direct_vm, direct_deploy):
+    contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
+    evidence_authority, _notice_authority = authorities(contract, direct_vm, "authenticate")
+    evidence_id = evidence(contract, evidence_authority)
+    assert contract.get_node_record(evidence_id)["assessment_status"] == "UNASSESSED"
+    direct_vm.mock_web(re.escape(EVIDENCE_URI), {"status": 200, "body": EVIDENCE_BODY})
+    contract.authenticate_evidence(evidence_id)
+    record = contract.get_node_record(evidence_id)
+    assert record["assessment_status"] == "CLEARED"
+    assert record["status"] == "ACTIVE"
+
+    wrong_id = contract.register_evidence(
+        EVIDENCE_ORIGIN + "/wrong-bytes",
+        digest(b"committed bytes"),
+        len(b"committed bytes"),
+        "auth-subject",
+        "Wrong bytes",
+        evidence_authority,
+    )
+    direct_vm.mock_web(re.escape(EVIDENCE_ORIGIN + "/wrong-bytes"), {"status": 200, "body": b"different bytes"})
+    contract.authenticate_evidence(wrong_id)
+    assert contract.get_node_record(wrong_id)["assessment_status"] == "REJECTED"
+
+
+def test_authentication_source_unavailable_is_retryable_and_never_cleared(direct_vm, direct_deploy):
+    contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
+    evidence_authority, _notice_authority = authorities(contract, direct_vm, "authenticate-retry")
+    evidence_id = evidence(contract, evidence_authority)
+    direct_vm.strict_mocks = True
+    contract.authenticate_evidence(evidence_id)
+    assert contract.get_node_record(evidence_id)["assessment_status"] == "SOURCE_UNAVAILABLE"
+    direct_vm.clear_mocks()
+    direct_vm.mock_web(re.escape(EVIDENCE_URI), {"status": 200, "body": EVIDENCE_BODY})
+    with direct_vm.prank("0x" + "d" * 40):
+        contract.authenticate_evidence(evidence_id)
+    assert contract.get_node_record(evidence_id)["assessment_status"] == "CLEARED"
+
+
+def test_cross_origin_mirror_is_verified_but_has_no_authority_or_clearance_effect(direct_vm, direct_deploy):
+    contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
+    evidence_authority, _notice_authority = authorities(contract, direct_vm, "mirror-cross-origin")
+    evidence_id = evidence(contract, evidence_authority)
+    mirror_uri = "https://independent-mirror.example/e-1"
+    direct_vm.mock_web(re.escape(mirror_uri), {"status": 200, "body": EVIDENCE_BODY})
+    mirror_id = contract.add_evidence_mirror(evidence_id, mirror_uri)
+    record = contract.get_node_record(evidence_id)
+    expected_mirror_id = hashlib.sha256(
+        ("palinode/evidence-mirror/v1|" + evidence_id + "|" + mirror_uri + "|" + digest(EVIDENCE_BODY) + "|" + str(len(EVIDENCE_BODY))).encode()
+    ).hexdigest()
+    assert mirror_id == expected_mirror_id
+    assert record["source_uri"] == EVIDENCE_URI
+    assert record["authority_id"] == evidence_authority
+    assert record["assessment_status"] == "UNASSESSED"
+    with direct_vm.expect_revert("duplicate evidence mirror"):
+        contract.add_evidence_mirror(evidence_id, mirror_uri)
+    with direct_vm.expect_revert("invalid HTTPS mirror URI"):
+        contract.add_evidence_mirror(evidence_id, "http://independent-mirror.example/e-1")
+
+
+def test_authority_versions_rotate_from_domain_declaration_and_preserve_history(direct_vm, direct_deploy):
+    contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
+    authority_id = register_authority(contract, direct_vm, EVIDENCE_ORIGIN, "rotation-1")
+    initial = contract.get_source_authority(authority_id)
+    assert initial["status"] == "ACTIVE"
+    assert initial["current_version"] == "1"
+    evidence_id = evidence(contract, authority_id)
+    new_controller = "0x" + "e" * 40
+    rotation = json.dumps(
+        {
+            "palinode": "1",
+            "authority_id": authority_id,
+            "authority_version": "2",
+            "authority_address": new_controller,
+            "canonical_origin": EVIDENCE_ORIGIN,
+            "nonce": "rotation-2",
+            "verification_policy": POLICY,
+        },
+        separators=(",", ":"),
+    ).encode()
+    direct_vm.clear_mocks()
+    direct_vm.mock_web(re.escape(EVIDENCE_ORIGIN + "/.well-known/palinode.json"), {"status": 200, "body": rotation})
+    assert contract.rotate_source_authority(authority_id, "rotation-2") == 2
+    rotated = contract.get_source_authority(authority_id)
+    assert rotated["current_version"] == "2"
+    assert rotated["authority_address"] == new_controller
+    assert contract.get_source_authority_version(authority_id, 1)["status"] == "REVOKED"
+    assert contract.get_node_record(evidence_id)["authority_version"] == "1"
+    with direct_vm.expect_revert("authority rotation was not verified"):
+        contract.rotate_source_authority(authority_id, "old-controller-attempt")
+    with direct_vm.expect_revert("not current authority controller"):
+        with direct_vm.prank("0x" + "a" * 40):
+            contract.revoke_source_authority(authority_id)
+    with direct_vm.prank(new_controller):
+        contract.revoke_source_authority(authority_id)
+    assert contract.get_source_authority(authority_id)["status"] == "REVOKED"
+    assert contract.get_node_record(evidence_id)["authority_id"] == authority_id

@@ -1,11 +1,12 @@
 import hashlib
 import json
+import os
 import re
 
 import pytest
 
 
-CONTRACT = "contracts/palinode.py"
+CONTRACT = os.environ.get("PALINODE_CONTRACT", "contracts/palinode.py")
 EVIDENCE_URI = "https://evidence.example/e-1"
 NOTICE_URI = "https://notice.example/n-1"
 EVIDENCE_ORIGIN = "https://evidence.example"

@@ -40,8 +40,11 @@ MAX_OUTGOING_EDGES = 64
 MAX_INCOMING_EDGES = 64
 MAX_IMPACT_STEPS_PER_CALL = 32
 MAX_ASSESSMENTS_PER_CASE = 8
-MAX_STATUS_TRANSITIONS_PER_NODE = 16
-MAX_ASSESSMENT_TRANSITIONS_PER_NODE = 16
+MAX_RECENT_HISTORY_ENTRIES = 16
+MAX_MIRRORS_PER_ARTIFACT = 4
+MAX_RETRY_TELEMETRY_ENTRIES = 8
+MAX_AUTHENTICATION_FETCH_BYTES = 16_777_216
+MAX_AUTHORITY_VERSIONS = 8
 
 NODE_EVIDENCE = "EVIDENCE"
 NODE_CLAIM = "CLAIM"
@@ -108,8 +111,11 @@ ASSESSMENT_STATUSES = (
 )
 
 AUTHORITY_POLICY_WELL_KNOWN_V1 = "WELL_KNOWN_ADDRESS_NONCE_V1"
-AUTHORITY_VERIFIED = "VERIFIED"
-AUTHORITY_STATUSES = (AUTHORITY_VERIFIED,)
+AUTHORITY_ACTIVE = "ACTIVE"
+AUTHORITY_REVOKED = "REVOKED"
+AUTHORITY_STATUSES = (AUTHORITY_ACTIVE, AUTHORITY_REVOKED)
+AUTHORITY_VERSION_ACTIVE = "ACTIVE"
+AUTHORITY_VERSION_REVOKED = "REVOKED"
 
 CASE_OPEN = "OPEN"
 CASE_ASSESSED_MATERIAL = "ASSESSED_MATERIAL"
@@ -192,6 +198,17 @@ AUTHORITY_REASON_CODES = (
     "AUTHORITY_ENCODING_ERROR",
     "AUTHORITY_MALFORMED",
     "AUTHORITY_BINDING_MISMATCH",
+)
+
+AUTHENTICATION_REASON_CODES = (
+    "AUTHENTICATED",
+    "AUTHORITY_REVOKED",
+    "SOURCE_UNAVAILABLE",
+    "SOURCE_HTTP_ERROR",
+    "SOURCE_TOO_LARGE",
+    "SOURCE_ENCODING_ERROR",
+    "DIGEST_MISMATCH",
+    "BYTE_LENGTH_MISMATCH",
 )
 
 MIRROR_RESULT_CONCLUSIVE = "CONCLUSIVE"
@@ -311,6 +328,8 @@ def _normalise_https_origin(value: str) -> str:
     if "/" in remainder or ":" in remainder or len(remainder) == 0:
         return ""
     host = remainder.lower()
+    if not _is_public_hostname(host):
+        return ""
     labels = host.split(".")
     if len(labels) < 2:
         return ""
@@ -323,6 +342,37 @@ def _normalise_https_origin(value: str) -> str:
             if character not in "abcdefghijklmnopqrstuvwxyz0123456789-":
                 return ""
     return "https://" + host
+
+
+def _is_public_hostname(host: str) -> bool:
+    """Reject obvious local/private retrieval targets before nondeterminism."""
+    lowered = host.lower()
+    if lowered in ("localhost", "localhost.localdomain"):
+        return False
+    for suffix in (".localhost", ".local", ".internal", ".home.arpa"):
+        if lowered.endswith(suffix):
+            return False
+    parts = lowered.split(".")
+    if len(parts) == 4:
+        numeric = True
+        octets: list[int] = []
+        for part in parts:
+            if not part.isdigit() or len(part) > 3:
+                numeric = False
+                break
+            octets.append(int(part))
+        if numeric and all(0 <= octet <= 255 for octet in octets):
+            first = octets[0]
+            second = octets[1]
+            if first in (0, 10, 127) or first >= 224:
+                return False
+            if first == 169 and second == 254:
+                return False
+            if first == 172 and 16 <= second <= 31:
+                return False
+            if first == 192 and second == 168:
+                return False
+    return True
 
 
 def _normalise_https_uri(value: str) -> str:
@@ -585,6 +635,79 @@ def _authority_challenge_evaluation(
     }
 
 
+def _authority_rotation_evaluation(
+    challenge_uri: str,
+    expected_authority_id: str,
+    expected_origin: str,
+    expected_version: u256,
+    expected_policy: str,
+    expected_nonce: str,
+) -> dict[str, object]:
+    """Validate a domain-declared authority version without trusting caller text."""
+    body, error = _fetch_bounded_body(challenge_uri, MAX_AUTHORITY_CHALLENGE_BYTES)
+    if error != "":
+        mapped = "AUTHORITY_SOURCE_UNAVAILABLE"
+        if error == "SOURCE_HTTP_ERROR":
+            mapped = "AUTHORITY_HTTP_ERROR"
+        elif error == "SOURCE_TOO_LARGE":
+            mapped = "AUTHORITY_TOO_LARGE"
+        elif error == "SOURCE_ENCODING_ERROR":
+            mapped = "AUTHORITY_ENCODING_ERROR"
+        return {"result_status": RESULT_RETRYABLE, "verified": False, "reason_code": mapped, "controller": ""}
+    try:
+        candidate = json.loads(body.decode("utf-8"))
+    except Exception:
+        return {"result_status": RESULT_RETRYABLE, "verified": False, "reason_code": "AUTHORITY_MALFORMED", "controller": ""}
+    required = (
+        "palinode",
+        "authority_id",
+        "authority_version",
+        "authority_address",
+        "canonical_origin",
+        "nonce",
+        "verification_policy",
+    )
+    if not isinstance(candidate, dict) or len(candidate) != len(required):
+        return {"result_status": RESULT_RETRYABLE, "verified": False, "reason_code": "AUTHORITY_MALFORMED", "controller": ""}
+    for key in required:
+        if key not in candidate or not isinstance(candidate[key], str):
+            return {"result_status": RESULT_RETRYABLE, "verified": False, "reason_code": "AUTHORITY_MALFORMED", "controller": ""}
+    controller = _normalise_address(candidate["authority_address"])
+    if (
+        candidate["palinode"] != "1"
+        or candidate["authority_id"] != expected_authority_id
+        or candidate["authority_version"] != str(expected_version)
+        or controller == ""
+        or _normalise_https_origin(candidate["canonical_origin"]) != expected_origin
+        or candidate["nonce"] != expected_nonce
+        or candidate["verification_policy"] != expected_policy
+    ):
+        return {"result_status": RESULT_RETRYABLE, "verified": False, "reason_code": "AUTHORITY_BINDING_MISMATCH", "controller": ""}
+    return {"result_status": RESULT_CONCLUSIVE, "verified": True, "reason_code": "AUTHORITY_VERIFIED", "controller": controller}
+
+
+def _validate_rotation_result(result: object) -> bool:
+    if not isinstance(result, dict) or len(result) != 4:
+        return False
+    if set(result.keys()) != {"result_status", "verified", "reason_code", "controller"}:
+        return False
+    if result["result_status"] not in (RESULT_CONCLUSIVE, RESULT_RETRYABLE):
+        return False
+    if not isinstance(result["verified"], bool) or not isinstance(result["controller"], str):
+        return False
+    if result["reason_code"] not in AUTHORITY_REASON_CODES:
+        return False
+    if result["result_status"] == RESULT_CONCLUSIVE:
+        return result["verified"] and result["reason_code"] == "AUTHORITY_VERIFIED" and _normalise_address(result["controller"]) != ""
+    return not result["verified"] and result["controller"] == ""
+
+
+def _rotation_results_equal(left: object, right: dict[str, object]) -> bool:
+    if not isinstance(left, dict):
+        return False
+    return all(left.get(key) == right.get(key) for key in ("result_status", "verified", "reason_code", "controller"))
+
+
 def _validate_authority_result(result: object) -> bool:
     if not isinstance(result, dict) or len(result) != 3:
         return False
@@ -609,6 +732,132 @@ def _authority_results_equal(left: object, right: dict[str, object]) -> bool:
         and left.get("verified") == right.get("verified")
         and left.get("reason_code") == right.get("reason_code")
     )
+
+
+def _authentication_evaluation(
+    source_uri: str,
+    expected_digest: str,
+    expected_byte_length: u256,
+    subject_id: str,
+) -> dict[str, object]:
+    """Authenticate committed source identity without an LLM.
+
+    The subject binding here is intentionally narrow: the contract has already
+    committed the subject and authority-bound URI, and this function checks
+    only that the canonical source is retrievable with the exact committed
+    bytes.  It does not claim that the bytes are truthful or that a page's
+    prose proves the subject identity.
+    """
+    if not _is_valid_identifier(subject_id):
+        return {
+            "result_status": RESULT_CONCLUSIVE,
+            "source_available": False,
+            "digest_matches": False,
+            "byte_length_matches": False,
+            "subject_binding_valid": False,
+            "assessment": ASSESS_REJECTED,
+            "reason_code": "DIGEST_MISMATCH",
+        }
+    body, error = _fetch_bounded_body(source_uri, MAX_AUTHENTICATION_FETCH_BYTES)
+    if error != "":
+        mapped = error
+        return {
+            "result_status": RESULT_RETRYABLE,
+            "source_available": False,
+            "digest_matches": False,
+            "byte_length_matches": False,
+            "subject_binding_valid": True,
+            "assessment": ASSESS_SOURCE_UNAVAILABLE,
+            "reason_code": mapped,
+        }
+    actual_length = len(body)
+    actual_digest = hashlib.sha256(body).hexdigest()
+    length_matches = actual_length == int(expected_byte_length)
+    digest_matches = actual_digest == expected_digest
+    if not length_matches:
+        return {
+            "result_status": RESULT_CONCLUSIVE,
+            "source_available": True,
+            "digest_matches": digest_matches,
+            "byte_length_matches": False,
+            "subject_binding_valid": True,
+            "assessment": ASSESS_REJECTED,
+            "reason_code": "BYTE_LENGTH_MISMATCH",
+        }
+    if not digest_matches:
+        return {
+            "result_status": RESULT_CONCLUSIVE,
+            "source_available": True,
+            "digest_matches": False,
+            "byte_length_matches": True,
+            "subject_binding_valid": True,
+            "assessment": ASSESS_REJECTED,
+            "reason_code": "DIGEST_MISMATCH",
+        }
+    return {
+        "result_status": RESULT_CONCLUSIVE,
+        "source_available": True,
+        "digest_matches": True,
+        "byte_length_matches": True,
+        "subject_binding_valid": True,
+        "assessment": ASSESS_CLEARED,
+        "reason_code": "AUTHENTICATED",
+    }
+
+
+def _validate_authentication_result(result: object) -> bool:
+    if not isinstance(result, dict):
+        return False
+    required = (
+        "result_status",
+        "source_available",
+        "digest_matches",
+        "byte_length_matches",
+        "subject_binding_valid",
+        "assessment",
+        "reason_code",
+    )
+    if len(result) != len(required) or any(key not in result for key in required):
+        return False
+    if result["result_status"] not in (RESULT_CONCLUSIVE, RESULT_RETRYABLE):
+        return False
+    for key in ("source_available", "digest_matches", "byte_length_matches", "subject_binding_valid"):
+        if not isinstance(result[key], bool):
+            return False
+    if result["assessment"] not in (ASSESS_CLEARED, ASSESS_REJECTED, ASSESS_SOURCE_UNAVAILABLE):
+        return False
+    if result["reason_code"] not in AUTHENTICATION_REASON_CODES:
+        return False
+    if result["result_status"] == RESULT_RETRYABLE:
+        return result["assessment"] == ASSESS_SOURCE_UNAVAILABLE and not result["source_available"]
+    if result["assessment"] == ASSESS_CLEARED:
+        return (
+            result["source_available"]
+            and result["digest_matches"]
+            and result["byte_length_matches"]
+            and result["subject_binding_valid"]
+            and result["reason_code"] == "AUTHENTICATED"
+        )
+    if result["assessment"] == ASSESS_REJECTED and result["reason_code"] == "AUTHORITY_REVOKED":
+        return not result["source_available"]
+    return result["assessment"] == ASSESS_REJECTED and result["source_available"]
+
+
+def _authentication_results_equal(left: object, right: dict[str, object]) -> bool:
+    if not isinstance(left, dict):
+        return False
+    for key in (
+        "result_status",
+        "source_available",
+        "digest_matches",
+        "byte_length_matches",
+        "subject_binding_valid",
+        "assessment",
+        "reason_code",
+    ):
+        if left.get(key) != right.get(key):
+            return False
+    return True
 
 
 def _mirror_verification(
@@ -641,6 +890,26 @@ def _mirror_verification(
         "verified": True,
         "reason_code": "MIRROR_VERIFIED",
     }
+
+
+def _validate_one_mirror_result(result: object) -> bool:
+    if not isinstance(result, dict) or len(result) != 3:
+        return False
+    if set(result.keys()) != {"result_status", "verified", "reason_code"}:
+        return False
+    if result["result_status"] not in (RESULT_CONCLUSIVE, RESULT_RETRYABLE):
+        return False
+    if not isinstance(result["verified"], bool) or result["reason_code"] not in MIRROR_REASON_CODES:
+        return False
+    if result["result_status"] == RESULT_CONCLUSIVE:
+        return result["verified"] and result["reason_code"] == "MIRROR_VERIFIED"
+    return not result["verified"]
+
+
+def _one_mirror_results_equal(left: object, right: dict[str, object]) -> bool:
+    if not isinstance(left, dict):
+        return False
+    return all(left.get(key) == right.get(key) for key in ("result_status", "verified", "reason_code"))
 
 
 def _mirror_result(
@@ -811,8 +1080,6 @@ class Palinode(gl.Contract):
     node_ids: DynArray[str]
     edge_ids: DynArray[str]
     case_ids: DynArray[str]
-    status_history: DynArray[str]
-    assessment_history: DynArray[str]
 
     # Node registry.  History is represented by immutable identity fields and
     # append-only status history; the current status is a separate map.
@@ -827,12 +1094,22 @@ class Palinode(gl.Contract):
     node_assessment_sequence: TreeMap[str, u256]
     node_assessment_case: TreeMap[str, str]
     node_assessment_transition_count: TreeMap[str, u256]
+    node_assessment_history: TreeMap[str, DynArray[str]]
+    node_assessment_history_cursor: TreeMap[str, u256]
+    node_assessment_history_total: TreeMap[str, u256]
     node_historical_validity: TreeMap[str, str]
     node_source_uri: TreeMap[str, str]
     node_source_authority: TreeMap[str, str]
+    node_source_authority_version: TreeMap[str, u256]
+    node_source_authority_version_id: TreeMap[str, str]
     node_content_sha256: TreeMap[str, str]
     node_byte_length: TreeMap[str, u256]
     node_transition_count: TreeMap[str, u256]
+    node_status_history: TreeMap[str, DynArray[str]]
+    node_status_history_cursor: TreeMap[str, u256]
+    node_status_history_total: TreeMap[str, u256]
+    evidence_mirrors: TreeMap[str, DynArray[str]]
+    evidence_mirror_identity: TreeMap[str, bool]
     evidence_identity_to_id: TreeMap[str, str]
     outgoing_edges: TreeMap[str, DynArray[str]]
     outgoing_count: TreeMap[str, u256]
@@ -840,16 +1117,28 @@ class Palinode(gl.Contract):
     evidence_successor: TreeMap[str, str]
     evidence_predecessor: TreeMap[str, str]
 
-    # Source-authority registry.  Authority records are immutable after a
-    # successful domain-control challenge; there is no owner override.
+    # Source-authority registry.  Stable authority IDs have versioned
+    # controller/policy records.  Rotation is proven by the canonical origin;
+    # there is no owner override.
     authority_ids: DynArray[str]
     authority_identity_to_id: TreeMap[str, str]
+    authority_origin_to_id: TreeMap[str, str]
     authority_address: TreeMap[str, str]
     authority_origin: TreeMap[str, str]
     authority_policy: TreeMap[str, str]
     authority_nonce: TreeMap[str, str]
     authority_challenge_uri: TreeMap[str, str]
     authority_status: TreeMap[str, str]
+    authority_current_version: TreeMap[str, u256]
+    authority_version_ids: TreeMap[str, DynArray[str]]
+    authority_version_controller: TreeMap[str, str]
+    authority_version_origin: TreeMap[str, str]
+    authority_version_policy: TreeMap[str, str]
+    authority_version_nonce: TreeMap[str, str]
+    authority_version_challenge_uri: TreeMap[str, str]
+    authority_version_status: TreeMap[str, str]
+    authority_version_sequence: TreeMap[str, u256]
+    authority_version_created_at: TreeMap[str, str]
     authority_registered_sequence: TreeMap[str, u256]
     authority_registered_at: TreeMap[str, str]
 
@@ -870,8 +1159,11 @@ class Palinode(gl.Contract):
     case_notice_authority: TreeMap[str, str]
     case_notice_sha256: TreeMap[str, str]
     case_notice_byte_length: TreeMap[str, u256]
+    case_notice_authority_version: TreeMap[str, u256]
     case_evidence_retrieval_uri: TreeMap[str, str]
     case_notice_retrieval_uri: TreeMap[str, str]
+    case_notice_mirrors: TreeMap[str, DynArray[str]]
+    case_notice_mirror_identity: TreeMap[str, bool]
     case_opening_reason_code: TreeMap[str, str]
     case_opening_note: TreeMap[str, str]
     case_status: TreeMap[str, str]
@@ -887,6 +1179,9 @@ class Palinode(gl.Contract):
     case_adjudicated_sequence: TreeMap[str, u256]
     case_assessment_count: TreeMap[str, u256]
     case_retry_count: TreeMap[str, u256]
+    case_retry_telemetry: TreeMap[str, DynArray[str]]
+    case_retry_telemetry_cursor: TreeMap[str, u256]
+    case_retry_telemetry_total: TreeMap[str, u256]
 
     # Per-case bounded edge work queue.  Queue entries are edge IDs and the
     # cursor is monotonic; no transaction scans the entire graph.
@@ -930,8 +1225,18 @@ class Palinode(gl.Contract):
         self._require(_is_valid_contract_id(authority_id), "malformed authority ID")
         self._require(authority_id in self.authority_status, "authority does not exist")
         self._require(
-            self.authority_status[authority_id] == AUTHORITY_VERIFIED,
-            "authority is not verified",
+            self.authority_status[authority_id] == AUTHORITY_ACTIVE,
+            "authority is not active",
+        )
+
+    def _require_authority_version(self, authority_id: str, version: u256) -> None:
+        self._require_authority(authority_id)
+        self._require(version == self.authority_current_version[authority_id], "authority version is stale")
+        version_key = authority_id + "|" + str(version)
+        self._require(version_key in self.authority_version_status, "authority version does not exist")
+        self._require(
+            self.authority_version_status[version_key] == AUTHORITY_VERSION_ACTIVE,
+            "authority version is not active",
         )
 
     def _require_authority_bound_uri(self, authority_id: str, uri: str) -> str:
@@ -953,6 +1258,7 @@ class Palinode(gl.Contract):
         content_sha256: str,
         byte_length: u256,
         authority_id: str,
+        authority_version: u256,
     ) -> str:
         self._require(len(self.node_ids) < MAX_NODES, "node capacity reached")
         sequence = self._take_sequence()
@@ -985,9 +1291,19 @@ class Palinode(gl.Contract):
         self.node_historical_validity[node_id] = "HISTORICAL_ACCEPTED"
         self.node_source_uri[node_id] = source_uri
         self.node_source_authority[node_id] = authority_id
+        self.node_source_authority_version[node_id] = authority_version
+        version_key = authority_id + "|" + str(authority_version)
+        self.node_source_authority_version_id[node_id] = version_key
         self.node_content_sha256[node_id] = content_sha256
         self.node_byte_length[node_id] = byte_length
         self.node_transition_count[node_id] = u256(0)
+        self.node_status_history.get_or_insert_default(node_id)
+        self.node_status_history_cursor[node_id] = u256(0)
+        self.node_status_history_total[node_id] = u256(0)
+        self.node_assessment_history.get_or_insert_default(node_id)
+        self.node_assessment_history_cursor[node_id] = u256(0)
+        self.node_assessment_history_total[node_id] = u256(0)
+        self.evidence_mirrors.get_or_insert_default(node_id)
         self.outgoing_count[node_id] = u256(0)
         self.incoming_count[node_id] = u256(0)
         self.outgoing_edges.get_or_insert_default(node_id)
@@ -997,7 +1313,7 @@ class Palinode(gl.Contract):
         self._require(node_type in NODE_TYPES, "unsupported node type")
         self._require(node_type != NODE_EVIDENCE, "use register_evidence")
         self._validate_node_metadata(subject_id, title)
-        return self._create_node(node_type, subject_id, title, "", "", u256(0), "")
+        return self._create_node(node_type, subject_id, title, "", "", u256(0), "", u256(0))
 
     @gl.public.write
     def register_source_authority(
@@ -1030,6 +1346,7 @@ class Palinode(gl.Contract):
         self._require(authority_address != "", "invalid authority sender address")
         identity = authority_address + "|" + origin
         self._require(identity not in self.authority_identity_to_id, "authority already registered")
+        self._require(origin not in self.authority_origin_to_id, "authority origin already registered")
         challenge_uri = origin + "/.well-known/palinode.json"
 
         def leader_fn() -> dict[str, object]:
@@ -1079,15 +1396,182 @@ class Palinode(gl.Contract):
         sequence = self._take_sequence()
         self.authority_ids.append(authority_id)
         self.authority_identity_to_id[identity] = authority_id
+        self.authority_origin_to_id[origin] = authority_id
         self.authority_address[authority_id] = authority_address
         self.authority_origin[authority_id] = origin
         self.authority_policy[authority_id] = verification_policy
         self.authority_nonce[authority_id] = challenge_nonce
         self.authority_challenge_uri[authority_id] = challenge_uri
-        self.authority_status[authority_id] = AUTHORITY_VERIFIED
+        self.authority_status[authority_id] = AUTHORITY_ACTIVE
+        self.authority_current_version[authority_id] = u256(1)
+        self.authority_version_ids.get_or_insert_default(authority_id)
+        version_key = authority_id + "|1"
+        self.authority_version_ids[authority_id].append(version_key)
+        self.authority_version_controller[version_key] = authority_address
+        self.authority_version_origin[version_key] = origin
+        self.authority_version_policy[version_key] = verification_policy
+        self.authority_version_nonce[version_key] = challenge_nonce
+        self.authority_version_challenge_uri[version_key] = challenge_uri
+        self.authority_version_status[version_key] = AUTHORITY_VERSION_ACTIVE
+        self.authority_version_sequence[version_key] = sequence
+        self.authority_version_created_at[version_key] = self._tx_datetime()
         self.authority_registered_sequence[authority_id] = sequence
         self.authority_registered_at[authority_id] = self._tx_datetime()
         return authority_id
+
+    @gl.public.write
+    def rotate_source_authority(self, authority_id: str, challenge_nonce: str) -> u256:
+        """Register the next controller only from a fresh canonical declaration.
+
+        The caller does not supply the replacement address.  The canonical
+        origin declares the next version and controller in its well-known
+        document, so a former controller cannot impersonate the successor.
+        """
+        self._require(_is_valid_contract_id(authority_id), "malformed authority ID")
+        self._require(authority_id in self.authority_status, "authority does not exist")
+        self._require(self.authority_status[authority_id] == AUTHORITY_ACTIVE, "authority is not active")
+        self._require(
+            _is_valid_text(challenge_nonce, MAX_NONCE_LENGTH),
+            "invalid authority challenge nonce",
+        )
+        current_version = self.authority_current_version[authority_id]
+        self._require(current_version < u256(MAX_AUTHORITY_VERSIONS), "authority version capacity reached")
+        next_version = current_version + u256(1)
+        challenge_uri = self.authority_origin[authority_id] + "/.well-known/palinode.json"
+        expected_policy = self.authority_policy[authority_id]
+        expected_origin = self.authority_origin[authority_id]
+
+        def leader_fn() -> dict[str, object]:
+            return _authority_rotation_evaluation(
+                challenge_uri,
+                authority_id,
+                expected_origin,
+                next_version,
+                expected_policy,
+                challenge_nonce,
+            )
+
+        def validator_fn(leader_result: object) -> bool:
+            if not isinstance(leader_result, gl.vm.Return):
+                return False
+            proposed = leader_result.calldata
+            if not _validate_rotation_result(proposed):
+                return False
+            independent = _authority_rotation_evaluation(
+                challenge_uri,
+                authority_id,
+                expected_origin,
+                next_version,
+                expected_policy,
+                challenge_nonce,
+            )
+            return _rotation_results_equal(proposed, independent)
+
+        result = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
+        self._require(_validate_rotation_result(result), "authority rotation result rejected")
+        rotation_result = cast(dict[str, object], result)
+        self._require(
+            rotation_result["result_status"] == RESULT_CONCLUSIVE
+            and rotation_result["verified"],
+            "authority rotation was not verified",
+        )
+        version_key = authority_id + "|" + str(next_version)
+        self._require(version_key not in self.authority_version_status, "authority version collision")
+        old_key = authority_id + "|" + str(current_version)
+        sequence = self._take_sequence()
+        self.authority_version_status[old_key] = AUTHORITY_VERSION_REVOKED
+        self.authority_version_ids[authority_id].append(version_key)
+        self.authority_current_version[authority_id] = next_version
+        self.authority_address[authority_id] = cast(str, rotation_result["controller"])
+        self.authority_nonce[authority_id] = challenge_nonce
+        self.authority_challenge_uri[authority_id] = challenge_uri
+        self.authority_status[authority_id] = AUTHORITY_ACTIVE
+        self.authority_version_controller[version_key] = cast(str, rotation_result["controller"])
+        self.authority_version_origin[version_key] = expected_origin
+        self.authority_version_policy[version_key] = expected_policy
+        self.authority_version_nonce[version_key] = challenge_nonce
+        self.authority_version_challenge_uri[version_key] = challenge_uri
+        self.authority_version_status[version_key] = AUTHORITY_VERSION_ACTIVE
+        self.authority_version_sequence[version_key] = sequence
+        self.authority_version_created_at[version_key] = self._tx_datetime()
+        return next_version
+
+    @gl.public.write
+    def revoke_source_authority(self, authority_id: str) -> None:
+        """Revoke current authority trust without rewriting historical nodes."""
+        self._require(_is_valid_contract_id(authority_id), "malformed authority ID")
+        self._require(authority_id in self.authority_status, "authority does not exist")
+        sender = _normalise_address(str(gl.message.sender_address))
+        current_version = self.authority_current_version[authority_id]
+        version_key = authority_id + "|" + str(current_version)
+        self._require(sender == self.authority_version_controller[version_key], "not current authority controller")
+        self.authority_status[authority_id] = AUTHORITY_REVOKED
+        self.authority_version_status[version_key] = AUTHORITY_VERSION_REVOKED
+
+    @gl.public.write
+    def authenticate_evidence(self, evidence_id: str) -> None:
+        """Consensus-check exact bytes at the committed canonical source.
+
+        CLEARED means only that the authority-bound canonical retrieval returned
+        the committed byte length and SHA-256.  It is not a philosophical truth
+        judgment and does not itself propagate impact through the graph.
+        """
+        self._require_node_id(evidence_id)
+        self._require(self.node_type[evidence_id] == NODE_EVIDENCE, "authentication target must be evidence")
+        if self.node_assessment_status[evidence_id] != ASSESS_PENDING:
+            self._transition_assessment(evidence_id, ASSESS_PENDING, "")
+        authority_id = self.node_source_authority[evidence_id]
+        version = self.node_source_authority_version[evidence_id]
+        source_uri = self.node_source_uri[evidence_id]
+        version_key = authority_id + "|" + str(version)
+        authentication_result: object
+        if (
+            authority_id not in self.authority_status
+            or self.authority_status[authority_id] != AUTHORITY_ACTIVE
+            or version_key not in self.authority_version_status
+            or self.authority_version_status[version_key] != AUTHORITY_VERSION_ACTIVE
+            or version != self.authority_current_version[authority_id]
+        ):
+            authentication_result = {
+                "result_status": RESULT_CONCLUSIVE,
+                "source_available": False,
+                "digest_matches": False,
+                "byte_length_matches": False,
+                "subject_binding_valid": False,
+                "assessment": ASSESS_REJECTED,
+                "reason_code": "AUTHORITY_REVOKED",
+            }
+        else:
+            self._require_authority_version(authority_id, version)
+
+            def leader_fn() -> dict[str, object]:
+                return _authentication_evaluation(
+                    source_uri,
+                    self.node_content_sha256[evidence_id],
+                    self.node_byte_length[evidence_id],
+                    self.node_subject[evidence_id],
+                )
+
+            def validator_fn(leader_result: object) -> bool:
+                if not isinstance(leader_result, gl.vm.Return):
+                    return False
+                proposed = leader_result.calldata
+                if not _validate_authentication_result(proposed):
+                    return False
+                independent = _authentication_evaluation(
+                    source_uri,
+                    self.node_content_sha256[evidence_id],
+                    self.node_byte_length[evidence_id],
+                    self.node_subject[evidence_id],
+                )
+                return _authentication_results_equal(proposed, independent)
+
+            authentication_result = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
+            self._require(_validate_authentication_result(authentication_result), "authentication result rejected")
+        result = cast(dict[str, object], authentication_result)
+        target_assessment = cast(str, result["assessment"])
+        if self.node_assessment_status[evidence_id] != target_assessment:
+            self._transition_assessment(evidence_id, target_assessment, "")
 
     @gl.public.write
     def register_evidence(
@@ -1125,6 +1609,7 @@ class Palinode(gl.Contract):
             content_sha256,
             byte_length,
             authority_id,
+            self.authority_current_version[authority_id],
         )
         self.evidence_identity_to_id[identity] = node_id
         return node_id
@@ -1271,10 +1756,12 @@ class Palinode(gl.Contract):
         self.case_opened_sequence[case_id] = sequence
         self.case_notice_uri[case_id] = normalised_notice_uri
         self.case_notice_authority[case_id] = notice_authority_id
+        self.case_notice_authority_version[case_id] = self.authority_current_version[notice_authority_id]
         self.case_notice_sha256[case_id] = notice_sha256
         self.case_notice_byte_length[case_id] = notice_byte_length
         self.case_evidence_retrieval_uri[case_id] = self.node_source_uri[target_evidence_id]
         self.case_notice_retrieval_uri[case_id] = normalised_notice_uri
+        self.case_notice_mirrors.get_or_insert_default(case_id)
         self.case_opening_reason_code[case_id] = opening_reason_code
         self.case_opening_note[case_id] = opening_note
         self.case_status[case_id] = CASE_OPEN
@@ -1290,6 +1777,9 @@ class Palinode(gl.Contract):
         self.case_adjudicated_sequence[case_id] = u256(0)
         self.case_assessment_count[case_id] = u256(0)
         self.case_retry_count[case_id] = u256(0)
+        self.case_retry_telemetry.get_or_insert_default(case_id)
+        self.case_retry_telemetry_cursor[case_id] = u256(0)
+        self.case_retry_telemetry_total[case_id] = u256(0)
         self.case_queue.get_or_insert_default(case_id)
         self.case_cursor[case_id] = u256(0)
         self.case_processed_steps[case_id] = u256(0)
@@ -1298,74 +1788,148 @@ class Palinode(gl.Contract):
             self._transition_assessment(target_evidence_id, ASSESS_PENDING, case_id)
         return case_id
 
-    @gl.public.write
-    def retry_revocation_case(
-        self,
-        case_id: str,
-        evidence_mirror_uri: str,
-        notice_mirror_uri: str,
-    ) -> None:
-        """Verify content-preserving mirrors and make a case retryable again.
+    def _record_retry_telemetry(self, case_id: str, reason: str) -> None:
+        entries = self.case_retry_telemetry[case_id]
+        total = self.case_retry_telemetry_total[case_id]
+        cursor = self.case_retry_telemetry_cursor[case_id]
+        record = str(self._take_sequence()) + "|" + reason
+        if len(entries) < MAX_RETRY_TELEMETRY_ENTRIES:
+            entries.append(record)
+        else:
+            entries[int(cursor % u256(MAX_RETRY_TELEMETRY_ENTRIES))] = record
+        self.case_retry_telemetry_cursor[case_id] = cursor + u256(1)
+        self.case_retry_telemetry_total[case_id] = total + u256(1)
 
-        Mirrors remain retrieval locations only.  The original evidence and
-        notice URI, authority, digest, and byte length are never rewritten.
-        v1 permits mirrors only under the same registered authority origins;
-        cross-authority mirrors require a future explicit authority policy.
-        """
-        self._require_case_id(case_id)
-        self._require(self.case_status[case_id] == CASE_INCONCLUSIVE, "case is not retryable")
-        target = self.case_target_evidence[case_id]
-        evidence_mirror = self._require_authority_bound_uri(
-            self.node_source_authority[target],
-            evidence_mirror_uri,
-        )
-        notice_mirror = self._require_authority_bound_uri(
-            self.case_notice_authority[case_id],
-            notice_mirror_uri,
-        )
-        evidence_digest = self.node_content_sha256[target]
-        evidence_byte_length = self.node_byte_length[target]
-        notice_digest = self.case_notice_sha256[case_id]
-        notice_byte_length = self.case_notice_byte_length[case_id]
-
+    def _verify_one_mirror(self, mirror_uri: str, digest: str, byte_length: u256) -> dict[str, object]:
         def leader_fn() -> dict[str, object]:
-            return _mirror_result(
-                evidence_mirror,
-                evidence_digest,
-                evidence_byte_length,
-                notice_mirror,
-                notice_digest,
-                notice_byte_length,
-            )
+            return _mirror_verification(mirror_uri, digest, byte_length)
 
         def validator_fn(leader_result: object) -> bool:
             if not isinstance(leader_result, gl.vm.Return):
                 return False
             proposed = leader_result.calldata
-            if not _validate_mirror_result(proposed):
+            if not _validate_one_mirror_result(proposed):
                 return False
-            independent = _mirror_result(
-                evidence_mirror,
-                evidence_digest,
-                evidence_byte_length,
-                notice_mirror,
-                notice_digest,
-                notice_byte_length,
-            )
-            return _mirror_results_equal(proposed, independent)
+            independent = _mirror_verification(mirror_uri, digest, byte_length)
+            return _one_mirror_results_equal(proposed, independent)
 
         result = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
-        self._require(_validate_mirror_result(result), "mirror result rejected")
-        mirror_result = cast(dict[str, object], result)
-        self._require(
-            mirror_result["result_status"] == RESULT_CONCLUSIVE
-            and mirror_result["evidence_verified"]
-            and mirror_result["notice_verified"],
-            "mirror content does not match locked identity",
+        self._require(_validate_one_mirror_result(result), "mirror result rejected")
+        return cast(dict[str, object], result)
+
+    @gl.public.write
+    def add_evidence_mirror(self, evidence_id: str, mirror_uri: str) -> str:
+        """Accept a bounded, independently verified retrieval mirror."""
+        self._require_node_id(evidence_id)
+        self._require(self.node_type[evidence_id] == NODE_EVIDENCE, "mirror target must be evidence")
+        normalised_uri = _normalise_https_uri(mirror_uri)
+        self._require(normalised_uri != "", "invalid HTTPS mirror URI")
+        self._require(normalised_uri != self.node_source_uri[evidence_id], "canonical URI is not a mirror")
+        mirrors = self.evidence_mirrors[evidence_id]
+        self._require(len(mirrors) < MAX_MIRRORS_PER_ARTIFACT, "mirror capacity reached")
+        mirror_id = _sha256_text(
+            "palinode/evidence-mirror/v1|"
+            + evidence_id
+            + "|"
+            + normalised_uri
+            + "|"
+            + self.node_content_sha256[evidence_id]
+            + "|"
+            + str(self.node_byte_length[evidence_id])
         )
-        self.case_evidence_retrieval_uri[case_id] = evidence_mirror
-        self.case_notice_retrieval_uri[case_id] = notice_mirror
+        self._require(mirror_id not in self.evidence_mirror_identity, "duplicate evidence mirror")
+        result = self._verify_one_mirror(
+            normalised_uri,
+            self.node_content_sha256[evidence_id],
+            self.node_byte_length[evidence_id],
+        )
+        self._require(
+            result["result_status"] == RESULT_CONCLUSIVE and result["verified"],
+            "mirror content does not match locked evidence identity",
+        )
+        mirrors.append(normalised_uri)
+        self.evidence_mirror_identity[mirror_id] = True
+        return mirror_id
+
+    @gl.public.write
+    def add_notice_mirror(self, case_id: str, mirror_uri: str) -> str:
+        """Accept a bounded, content-preserving mirror for a locked notice."""
+        self._require_case_id(case_id)
+        normalised_uri = _normalise_https_uri(mirror_uri)
+        self._require(normalised_uri != "", "invalid HTTPS mirror URI")
+        self._require(normalised_uri != self.case_notice_uri[case_id], "canonical URI is not a mirror")
+        mirrors = self.case_notice_mirrors[case_id]
+        self._require(len(mirrors) < MAX_MIRRORS_PER_ARTIFACT, "mirror capacity reached")
+        mirror_id = _sha256_text(
+            "palinode/notice-mirror/v1|"
+            + case_id
+            + "|"
+            + normalised_uri
+            + "|"
+            + self.case_notice_sha256[case_id]
+            + "|"
+            + str(self.case_notice_byte_length[case_id])
+        )
+        self._require(mirror_id not in self.case_notice_mirror_identity, "duplicate notice mirror")
+        result = self._verify_one_mirror(
+            normalised_uri,
+            self.case_notice_sha256[case_id],
+            self.case_notice_byte_length[case_id],
+        )
+        self._require(
+            result["result_status"] == RESULT_CONCLUSIVE and result["verified"],
+            "mirror content does not match locked notice identity",
+        )
+        mirrors.append(normalised_uri)
+        self.case_notice_mirror_identity[mirror_id] = True
+        return mirror_id
+
+    def _mirror_uri_for_id(self, artifact_id: str, mirror_id: str, evidence: bool) -> str:
+        if evidence:
+            self._require(mirror_id in self.evidence_mirror_identity, "evidence mirror is not verified")
+            mirrors = self.evidence_mirrors[artifact_id]
+            digest = self.node_content_sha256[artifact_id]
+            length = self.node_byte_length[artifact_id]
+            prefix = "palinode/evidence-mirror/v1|" + artifact_id + "|"
+        else:
+            self._require(mirror_id in self.case_notice_mirror_identity, "notice mirror is not verified")
+            mirrors = self.case_notice_mirrors[artifact_id]
+            digest = self.case_notice_sha256[artifact_id]
+            length = self.case_notice_byte_length[artifact_id]
+            prefix = "palinode/notice-mirror/v1|" + artifact_id + "|"
+        for candidate in mirrors:
+            candidate_id = _sha256_text(prefix + candidate + "|" + digest + "|" + str(length))
+            if candidate_id == mirror_id:
+                return candidate
+        self._require(False, "mirror ID is not bound to artifact")
+        return ""
+
+    @gl.public.write
+    def retry_revocation_case(
+        self,
+        case_id: str,
+        evidence_mirror_id: str,
+        notice_mirror_id: str,
+    ) -> None:
+        """Retry using the canonical URI or previously verified mirror IDs.
+
+        The caller cannot introduce a new retrieval URL in this method.  A
+        mirror must first pass independent digest/length verification through
+        add_evidence_mirror/add_notice_mirror.
+        """
+        self._require_case_id(case_id)
+        self._require(self.case_status[case_id] == CASE_INCONCLUSIVE, "case is not retryable")
+        target = self.case_target_evidence[case_id]
+        evidence_uri = self.node_source_uri[target]
+        notice_uri = self.case_notice_uri[case_id]
+        if evidence_mirror_id != "":
+            evidence_uri = self._mirror_uri_for_id(target, evidence_mirror_id, True)
+        if notice_mirror_id != "":
+            notice_uri = self._mirror_uri_for_id(case_id, notice_mirror_id, False)
+        self.case_evidence_retrieval_uri[case_id] = evidence_uri
+        self.case_notice_retrieval_uri[case_id] = notice_uri
         self.case_retry_count[case_id] = self.case_retry_count[case_id] + u256(1)
+        self._record_retry_telemetry(case_id, "RETRY_REQUESTED")
         if self.node_assessment_status[target] != ASSESS_PENDING:
             self._transition_assessment(target, ASSESS_PENDING, case_id)
 
@@ -1422,14 +1986,14 @@ class Palinode(gl.Contract):
             _allowed_transition(source_status, target_status),
             "status transition is not allowed",
         )
-        self._require(
-            self.node_transition_count[node_id] < u256(MAX_STATUS_TRANSITIONS_PER_NODE),
-            "node transition limit reached",
-        )
         sequence = self._take_sequence()
         self.node_status[node_id] = target_status
         self.node_transition_count[node_id] = self.node_transition_count[node_id] + u256(1)
-        self.status_history.append(
+        self._append_bounded_history(
+            self.node_status_history[node_id],
+            self.node_status_history_cursor,
+            self.node_status_history_total,
+            node_id,
             str(sequence)
             + "|"
             + node_id
@@ -1459,11 +2023,6 @@ class Palinode(gl.Contract):
             _allowed_assessment_transition(source_status, target_status),
             "assessment transition is not allowed",
         )
-        self._require(
-            self.node_assessment_transition_count[node_id]
-            < u256(MAX_ASSESSMENT_TRANSITIONS_PER_NODE),
-            "assessment transition limit reached",
-        )
         self.node_assessment_status[node_id] = target_status
         sequence = self._take_sequence()
         self.node_assessment_sequence[node_id] = sequence
@@ -1471,7 +2030,11 @@ class Palinode(gl.Contract):
         self.node_assessment_transition_count[node_id] = (
             self.node_assessment_transition_count[node_id] + u256(1)
         )
-        self.assessment_history.append(
+        self._append_bounded_history(
+            self.node_assessment_history[node_id],
+            self.node_assessment_history_cursor,
+            self.node_assessment_history_total,
+            node_id,
             str(sequence)
             + "|"
             + node_id
@@ -1482,6 +2045,22 @@ class Palinode(gl.Contract):
             + "|"
             + case_id
         )
+
+    def _append_bounded_history(
+        self,
+        history: DynArray[str],
+        cursor_map: TreeMap[str, u256],
+        total_map: TreeMap[str, u256],
+        node_id: str,
+        record: str,
+    ) -> None:
+        cursor = cursor_map[node_id]
+        if len(history) < MAX_RECENT_HISTORY_ENTRIES:
+            history.append(record)
+        else:
+            history[int(cursor % u256(MAX_RECENT_HISTORY_ENTRIES))] = record
+        cursor_map[node_id] = cursor + u256(1)
+        total_map[node_id] = total_map[node_id] + u256(1)
 
     def _assessment_status_for_result(self, result: dict[str, object]) -> str:
         if result["result_status"] == RESULT_RETRYABLE:
@@ -1514,29 +2093,25 @@ class Palinode(gl.Contract):
         current = self.node_status[node_id]
         if current == target_status:
             return
-        if target_status == STATUS_QUESTIONED and current in (
-            STATUS_UNDER_REVIEW,
-            STATUS_QUARANTINED,
-            STATUS_SUPERSEDED,
-            STATUS_INVALIDATED,
-        ):
+        severity = {
+            STATUS_ACTIVE: 0,
+            STATUS_REINSTATED: 0,
+            STATUS_INCONCLUSIVE: 0,
+            STATUS_QUESTIONED: 1,
+            STATUS_UNDER_REVIEW: 2,
+            STATUS_QUARANTINED: 3,
+            STATUS_INVALIDATED: 4,
+        }
+        self._require(target_status in severity, "unsupported ordinary impact status")
+        if current in (STATUS_SUPERSEDED, STATUS_INVALIDATED):
             return
-        if target_status == STATUS_UNDER_REVIEW and current in (
-            STATUS_QUARANTINED,
-            STATUS_SUPERSEDED,
-            STATUS_INVALIDATED,
-        ):
+        self._require(current in severity, "unsupported current ordinary impact status")
+        if severity[target_status] <= severity[current]:
             return
-        if target_status == STATUS_QUARANTINED and current in (STATUS_SUPERSEDED, STATUS_INVALIDATED):
-            return
-        try:
-            self._transition_node(node_id, target_status, reason_code, case_id)
-        except Exception:
-            # A stronger prior case or a valid but incompatible status is not
-            # allowed to abort an otherwise bounded, idempotent propagation.
-            return
+        self._transition_node(node_id, target_status, reason_code, case_id)
 
     def _propagation_status(self, root_effect: str, relationship: str) -> str:
+        self._require(root_effect in (ROOT_QUESTION, ROOT_INVALIDATE), "unsupported propagation root effect")
         if relationship == EDGE_REQUIRES:
             if root_effect == ROOT_INVALIDATE:
                 return STATUS_QUARANTINED
@@ -1549,8 +2124,13 @@ class Palinode(gl.Contract):
             if root_effect == ROOT_INVALIDATE:
                 return STATUS_QUARANTINED
             return STATUS_UNDER_REVIEW
-        # Losing a corroborating source does not prove reliance failure, and
-        # losing a contradiction weakens (rather than harms) the child.
+        if relationship == EDGE_CORROBORATES:
+            # One corroborator failing does not prove that the child is unsafe.
+            return ""
+        if relationship == EDGE_CONTRADICTS:
+            # Invalidating a contradiction does not weaken the claim it opposed.
+            return ""
+        self._require(False, "unsupported propagation relationship")
         return ""
 
     def _queue_edge(self, case_id: str, edge_id: str) -> None:
@@ -1587,6 +2167,7 @@ class Palinode(gl.Contract):
             self._transition_assessment(target, assessment_status, case_id)
 
         if result_status == RESULT_RETRYABLE or materiality == VERDICT_INCONCLUSIVE:
+            self._record_retry_telemetry(case_id, cast(str, result["reason_code"]))
             self.case_status[case_id] = CASE_INCONCLUSIVE
             return
         if materiality == VERDICT_IMMATERIAL:
@@ -1700,12 +2281,12 @@ class Palinode(gl.Contract):
             if target_status == "":
                 continue
             child_key = case_id + "|" + child
-            if child_key in self.case_seen_node:
-                continue
-            self.case_seen_node[child_key] = True
-            self.case_node_effect[child_key] = target_status
+            first_visit = child_key not in self.case_seen_node
+            if first_visit:
+                self.case_seen_node[child_key] = True
+                self.case_node_effect[child_key] = target_status
             self._apply_impact_status(child, target_status, "IMPACT_" + relationship, case_id)
-            if child in self.outgoing_edges:
+            if first_visit and child in self.outgoing_edges:
                 for child_edge_id in self.outgoing_edges[child]:
                     self._queue_edge(case_id, child_edge_id)
 
@@ -1733,8 +2314,12 @@ class Palinode(gl.Contract):
             "historical_validity": self.node_historical_validity[node_id],
             "source_uri": self.node_source_uri[node_id],
             "authority_id": self.node_source_authority[node_id],
+            "authority_version": str(self.node_source_authority_version[node_id]),
+            "authority_version_id": self.node_source_authority_version_id[node_id],
             "content_sha256": self.node_content_sha256[node_id],
             "byte_length": str(self.node_byte_length[node_id]),
+            "status_transition_count": str(self.node_transition_count[node_id]),
+            "assessment_transition_count": str(self.node_assessment_transition_count[node_id]),
         }
 
     @gl.public.view
@@ -1763,6 +2348,7 @@ class Palinode(gl.Contract):
             "opened_sequence": str(self.case_opened_sequence[case_id]),
             "notice_uri": self.case_notice_uri[case_id],
             "notice_authority_id": self.case_notice_authority[case_id],
+            "notice_authority_version": str(self.case_notice_authority_version[case_id]),
             "notice_sha256": self.case_notice_sha256[case_id],
             "notice_byte_length": str(self.case_notice_byte_length[case_id]),
             "evidence_retrieval_uri": self.case_evidence_retrieval_uri[case_id],
@@ -1781,7 +2367,8 @@ class Palinode(gl.Contract):
 
     @gl.public.view
     def get_source_authority(self, authority_id: str) -> dict[str, str]:
-        self._require_authority(authority_id)
+        self._require(_is_valid_contract_id(authority_id), "malformed authority ID")
+        self._require(authority_id in self.authority_status, "authority does not exist")
         return {
             "authority_id": authority_id,
             "authority_address": self.authority_address[authority_id],
@@ -1790,8 +2377,28 @@ class Palinode(gl.Contract):
             "challenge_nonce": self.authority_nonce[authority_id],
             "challenge_uri": self.authority_challenge_uri[authority_id],
             "status": self.authority_status[authority_id],
+            "current_version": str(self.authority_current_version[authority_id]),
             "registered_sequence": str(self.authority_registered_sequence[authority_id]),
             "registered_at": self.authority_registered_at[authority_id],
+        }
+
+    @gl.public.view
+    def get_source_authority_version(self, authority_id: str, version: u256) -> dict[str, str]:
+        self._require(_is_valid_contract_id(authority_id), "malformed authority ID")
+        self._require(authority_id in self.authority_status, "authority does not exist")
+        version_key = authority_id + "|" + str(version)
+        self._require(version_key in self.authority_version_status, "authority version does not exist")
+        return {
+            "authority_id": authority_id,
+            "version": str(version),
+            "authority_address": self.authority_version_controller[version_key],
+            "canonical_origin": self.authority_version_origin[version_key],
+            "verification_policy": self.authority_version_policy[version_key],
+            "challenge_nonce": self.authority_version_nonce[version_key],
+            "challenge_uri": self.authority_version_challenge_uri[version_key],
+            "status": self.authority_version_status[version_key],
+            "created_sequence": str(self.authority_version_sequence[version_key]),
+            "created_at": self.authority_version_created_at[version_key],
         }
 
     @gl.public.view
@@ -1821,9 +2428,48 @@ class Palinode(gl.Contract):
         return self.authority_ids
 
     @gl.public.view
-    def get_status_history(self) -> DynArray[str]:
-        return self.status_history
+    def get_evidence_mirrors(self, evidence_id: str) -> DynArray[str]:
+        self._require_node_id(evidence_id)
+        self._require(self.node_type[evidence_id] == NODE_EVIDENCE, "mirror target must be evidence")
+        return self.evidence_mirrors[evidence_id]
 
     @gl.public.view
-    def get_assessment_history(self) -> DynArray[str]:
-        return self.assessment_history
+    def get_notice_mirrors(self, case_id: str) -> DynArray[str]:
+        self._require_case_id(case_id)
+        return self.case_notice_mirrors[case_id]
+
+    @gl.public.view
+    def get_status_history(self, node_id: str) -> dict[str, str]:
+        self._require_node_id(node_id)
+        history = self.node_status_history[node_id]
+        result: dict[str, str] = {
+            "total_count": str(self.node_status_history_total[node_id]),
+            "recent_count": str(len(history)),
+        }
+        for index in range(len(history)):
+            result["slot_" + str(index)] = history[index]
+        return result
+
+    @gl.public.view
+    def get_assessment_history(self, node_id: str) -> dict[str, str]:
+        self._require_node_id(node_id)
+        history = self.node_assessment_history[node_id]
+        result: dict[str, str] = {
+            "total_count": str(self.node_assessment_history_total[node_id]),
+            "recent_count": str(len(history)),
+        }
+        for index in range(len(history)):
+            result["slot_" + str(index)] = history[index]
+        return result
+
+    @gl.public.view
+    def get_retry_telemetry(self, case_id: str) -> dict[str, str]:
+        self._require_case_id(case_id)
+        entries = self.case_retry_telemetry[case_id]
+        result: dict[str, str] = {
+            "total_count": str(self.case_retry_telemetry_total[case_id]),
+            "recent_count": str(len(entries)),
+        }
+        for index in range(len(entries)):
+            result["slot_" + str(index)] = entries[index]
+        return result

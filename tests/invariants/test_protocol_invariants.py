@@ -1,11 +1,12 @@
 import hashlib
 import json
+import os
 import re
 
 import pytest
 
 
-CONTRACT = "contracts/palinode.py"
+CONTRACT = os.environ.get("PALINODE_CONTRACT", "contracts/palinode.py")
 AUTHORITY_POLICY = "WELL_KNOWN_ADDRESS_NONCE_V1"
 
 
