@@ -10,6 +10,7 @@ documentation commits do not change `contracts/palinode.py`.
 | Field | Value |
 |---|---|
 | Source-freeze commit | `4a18242600218914ef4fa5de441bebd385967a1b` |
+| Repository evidence/docs freeze commit | `a310654b29dccc3c66f85bd382d28527f337d718` |
 | Contract source SHA-256 | `bd5e981605f2533bd5354a4e884288d585020514d4be9eaabd9cdb4ff39d4c06` |
 | Studionet address | `0x9c9d1993cd938846D1163Bba9AA81AC6d165de88` |
 | Deployment transaction | `0xdc1e5a61f584b2907a0bdadf258ece092fcb361110395c4055b95ffd048f6bd8` |
