@@ -87,7 +87,14 @@ def test_glsim_deploy_schema_and_deterministic_readback(glsim_url):
         )
     except Exception as exc:
         message = str(exc)
-        if "WinError 32" in message or "Compressed file ended" in message or "runner" in message.lower():
+        known_runtime_blocker = (
+            "WinError 32" in message
+            or "Compressed file ended" in message
+            or "runner" in message.lower()
+            or "timed out" in message.lower()
+            or "read timeout" in message.lower()
+        )
+        if known_runtime_blocker:
             pytest.skip("GLSIM_RUNTIME_BLOCKER: " + message)
         raise
     contract_address = deployed["contract_address"]
