@@ -30,6 +30,12 @@ This is a custom leader/validator architecture rather than a convenience
 wrapper because PALINODE needs exact field constraints, independent retrieval,
 explicit infrastructure outcomes, and no equivalence over free-form prose.
 
+`register_source_authority` uses the same protocol-owned leader/validator
+boundary for a smaller deterministic challenge result. Both sides retrieve the
+derived `/.well-known/palinode.json` URL and require exact binding of the
+registering address, normalized origin, nonce, policy, and Palinode version.
+The caller cannot choose the leader, validators, or any reviewer set.
+
 ## Result and post-consensus mutation
 
 The agreed result contains:
@@ -56,6 +62,11 @@ sections of a fixed authority-bearing task; it cannot extend the allowed result
 schema. A source outage, timeout, HTTP error, invalid encoding, digest mismatch,
 malformed result, or LLM error becomes explicit retryable inconclusive state or
 consensus disagreement. It never silently becomes a semantic verdict.
+
+Evidence retrieval failure commits assessment `SOURCE_UNAVAILABLE`, not
+`CLEARED`, `REJECTED`, or semantic `INCONCLUSIVE`. The permissionless retry
+path can first consensus-verify same-authority mirror bytes against the locked
+digest and length; only then can reassessment use the mirror location.
 
 ## Finality
 

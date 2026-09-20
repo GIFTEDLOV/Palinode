@@ -20,8 +20,14 @@ The contract has three layers:
    strict input bounds, node sequencing, typed edges, and duplicate policy.
 2. Isolated semantic adjudication: bounded HTTPS retrieval and a constrained
    LLM result inside `gl.vm.run_nondet_unsafe`.
-3. Deterministic consequences: result persistence, status transitions, root
-   impact, and resumable edge-by-edge propagation.
+3. Deterministic consequences: result persistence, separate assessment and
+   reliance transitions, root impact, and resumable edge-by-edge propagation.
+
+Source-authority registration is also a bounded consensus boundary: the
+registering address and normalized HTTPS origin are committed only after the
+derived `/.well-known/palinode.json` challenge binds address, origin, nonce,
+and policy. Evidence and notices reference verified authorities; callers do not
+choose validators.
 
 ## State ownership
 
@@ -30,6 +36,10 @@ result is canonical only once accepted under the protocol's lifecycle and
 finality rules. A future frontend or indexer can materialize views of node,
 edge, case, and queue state, but the contract remains authoritative for writes
 and reads needed for correctness.
+
+Application transaction tracking is non-canonical and documented separately in
+`docs/TRANSACTION_MODEL.md`. It preserves transaction IDs and distinguishes
+submission, consensus acceptance, execution success, and finalization.
 
 ## Atomicity
 

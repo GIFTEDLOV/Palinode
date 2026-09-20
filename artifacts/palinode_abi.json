@@ -16,6 +16,26 @@
       "ret": "null",
       "payable": false
     },
+    "get_assessment_history": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": [
+        {
+          "$rep": "string"
+        }
+      ]
+    },
+    "get_authority_ids": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": [
+        {
+          "$rep": "string"
+        }
+      ]
+    },
     "get_case_ids": {
       "params": [],
       "kwparams": {},
@@ -98,6 +118,19 @@
         "$dict": "string"
       }
     },
+    "get_source_authority": {
+      "params": [
+        [
+          "authority_id",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": {
+        "$dict": "string"
+      }
+    },
     "get_status_history": {
       "params": [],
       "kwparams": {},
@@ -128,6 +161,10 @@
       "params": [
         [
           "target_evidence_id",
+          "string"
+        ],
+        [
+          "notice_authority_id",
           "string"
         ],
         [
@@ -277,6 +314,10 @@
         [
           "title",
           "string"
+        ],
+        [
+          "authority_id",
+          "string"
         ]
       ],
       "kwparams": {},
@@ -302,6 +343,46 @@
       "kwparams": {},
       "readonly": false,
       "ret": "string",
+      "payable": false
+    },
+    "register_source_authority": {
+      "params": [
+        [
+          "canonical_origin",
+          "string"
+        ],
+        [
+          "verification_policy",
+          "string"
+        ],
+        [
+          "challenge_nonce",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "string",
+      "payable": false
+    },
+    "retry_revocation_case": {
+      "params": [
+        [
+          "case_id",
+          "string"
+        ],
+        [
+          "evidence_mirror_uri",
+          "string"
+        ],
+        [
+          "notice_mirror_uri",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
       "payable": false
     }
   }

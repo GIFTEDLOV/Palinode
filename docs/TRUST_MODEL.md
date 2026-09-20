@@ -13,6 +13,7 @@
 | Frontend | User interface and transaction builder | No |
 | Indexer/database | Derived query acceleration and presentation | No |
 | Case submitter | Proposes a case and metadata | No |
+| Source authority challenge document | Proves control of a canonical HTTPS origin for one immutable authority record | No; independently retrieved consensus input |
 
 ## Registration and access
 
@@ -21,6 +22,17 @@ edge, successor assertion, or revocation notice. This is an explicit protocol
 choice: the contract records claims and adjudicated impact without giving an
 owner the ability to rewrite evidence, erase nodes, override consensus, or
 change the transition policy at runtime.
+
+Adverse review is also permissionless. A case submitter does not need to be
+the evidence creator, and the evidence creator cannot suppress, erase, cancel,
+or rewrite a valid case. Exact duplicates are rejected while distinct notices
+remain separate canonical cases.
+
+Authority-backed evidence and notices require a verified authority ID. The
+authority is bound to the registering address and normalized HTTPS origin by a
+consensus-checked `/.well-known/palinode.json` challenge. A caller cannot label
+an arbitrary origin as authoritative, select the validators, or choose the
+semantic decision-makers for its own case.
 
 There is no owner, administrator, pause authority, arbitrary status setter, or
 verdict override in Phase 1. Capacity constants and enums are code-level
@@ -42,9 +54,18 @@ the separate node status state machine and status history. Thus an object can
 remain historically accepted while currently `QUESTIONED`, `QUARANTINED`,
 `SUPERSEDED`, or `INVALIDATED`.
 
+Registration and assessment are separate: a new node is `UNASSESSED`, not
+consensus-cleared. `get_node_record` exposes `assessment_status` and `status`
+simultaneously. `SOURCE_UNAVAILABLE` is an explicit liveness state, not a
+semantic rejection or clearance. Any caller may retry through digest-verified
+same-authority mirrors without changing the locked evidence identity.
+
 ## Finality boundary
 
 An EVM submission receipt is not by itself PALINODE finality. Consumers must
 wait for the GenLayer Intelligent Contract transaction to reach its applicable
 final status before treating a semantic result or propagation mutation as
-final. This repository does not deploy or call Studionet in Phase 1.
+final. `ACCEPTED` is tracked separately from execution success and finalization.
+The application layer must persist the transaction ID and resume polling it
+after timeouts rather than resubmitting automatically. This repository does
+not deploy or call Studionet in Phase 1.

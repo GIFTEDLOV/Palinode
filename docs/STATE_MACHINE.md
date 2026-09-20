@@ -22,6 +22,29 @@ Every transition appends a compact status-history record containing transition
 sequence, node ID, old status, new status, reason code, and case ID. Each node
 is limited to 16 transitions in Phase 1.
 
+## Assessment status
+
+Assessment status is a separate explicit state machine. It answers whether a
+registered object has received a bounded consensus assessment; it is not a
+shortcut for current downstream reliance.
+
+| Current | Legal next statuses |
+|---|---|
+| `UNASSESSED` | `PENDING` |
+| `PENDING` | `CLEARED`, `REJECTED`, `INCONCLUSIVE`, `SOURCE_UNAVAILABLE` |
+| `CLEARED` | `PENDING`, `REJECTED`, `INCONCLUSIVE`, `SOURCE_UNAVAILABLE` |
+| `REJECTED` | `PENDING`, `CLEARED`, `INCONCLUSIVE`, `SOURCE_UNAVAILABLE` |
+| `INCONCLUSIVE` | `PENDING`, `CLEARED`, `REJECTED`, `SOURCE_UNAVAILABLE` |
+| `SOURCE_UNAVAILABLE` | `PENDING`, `CLEARED`, `REJECTED`, `INCONCLUSIVE` |
+
+Registration creates `UNASSESSED`/`ACTIVE`. Opening an adverse case creates
+`PENDING` without changing reliance. A conclusive immaterial result creates
+`CLEARED`; a material result creates `REJECTED`; semantic ambiguity creates
+`INCONCLUSIVE`; retrieval infrastructure failure creates
+`SOURCE_UNAVAILABLE`. Assessment transitions are append-only and separately
+bounded at 16 per node. The node view exposes both current dimensions and the
+assessment case ID.
+
 ## Revocation case status
 
 Case status is not overloaded with semantic fields:
@@ -40,11 +63,17 @@ The case separately stores `result_status` (`PENDING`, `CONCLUSIVE`, or
 
 ## Assessment transitions
 
-`OPEN` and `INCONCLUSIVE` cases may be assessed, subject to eight assessment
-attempts. A `MATERIAL` result must have root effect `INVALIDATE` or `QUESTION`;
-an `IMMATERIAL` result must have `NO_CHANGE`; an `INCONCLUSIVE` or `RETRYABLE`
-result cannot mutate node reliance state. A case that is `COMPLETE` or
-`PROPAGATING` cannot be reassessed.
+`OPEN` and `INCONCLUSIVE` cases may be assessed, subject to eight conclusive or
+semantic assessment attempts. Retryable infrastructure failures do not consume
+that semantic attempt budget, so an unavailable source cannot deadlock a case.
+`retry_revocation_case` is permissionless and may verify content-preserving
+mirrors before another assessment. Each retry transaction remains bounded;
+repeating it does not rewrite identity. A `MATERIAL` result must have
+root effect `INVALIDATE` or `QUESTION`; an `IMMATERIAL` result must have
+`NO_CHANGE`; an `INCONCLUSIVE` or `RETRYABLE` result cannot mutate node
+reliance state. A case that is `COMPLETE` or `PROPAGATING` cannot be
+reassessed. Exact duplicate challenge identities are rejected, while distinct
+notice identities remain independent and ordered by opening sequence.
 
 ## Recovery transition
 

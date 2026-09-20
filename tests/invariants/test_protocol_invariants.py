@@ -1,17 +1,46 @@
 import hashlib
+import json
+import re
 
 import pytest
 
 
 CONTRACT = "contracts/palinode.py"
+AUTHORITY_POLICY = "WELL_KNOWN_ADDRESS_NONCE_V1"
 
 
 def sha(body: bytes) -> str:
     return hashlib.sha256(body).hexdigest()
 
 
-def test_node_sequences_prove_dag_for_generated_forward_edges(direct_deploy):
+def register_authority(contract, direct_vm, origin, nonce):
+    sender = direct_vm.sender
+    if isinstance(sender, bytes):
+        sender = "0x" + sender.hex()
+    else:
+        sender = str(sender)
+    challenge = json.dumps(
+        {
+            "palinode": "1",
+            "authority_address": sender,
+            "canonical_origin": origin,
+            "nonce": nonce,
+            "verification_policy": AUTHORITY_POLICY,
+        },
+        separators=(",", ":"),
+    ).encode()
+    direct_vm.mock_web(
+        re.escape(origin + "/.well-known/palinode.json"),
+        {"status": 200, "body": challenge},
+    )
+    return contract.register_source_authority(origin, AUTHORITY_POLICY, nonce)
+
+
+def test_node_sequences_prove_dag_for_generated_forward_edges(direct_vm, direct_deploy):
     contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
+    authority_id = register_authority(
+        contract, direct_vm, "https://evidence.example", "invariant-dag"
+    )
     nodes = [
         contract.register_evidence(
             f"https://evidence.example/{index}",
@@ -19,6 +48,7 @@ def test_node_sequences_prove_dag_for_generated_forward_edges(direct_deploy):
             len(f"evidence-{index}"),
             f"subject-{index}",
             f"Evidence {index}",
+            authority_id,
         )
         for index in range(12)
     ]
@@ -74,6 +104,12 @@ def test_status_labels_have_explicit_recovery_and_review_paths(direct_deploy):
 
 def test_case_queue_is_scoped_and_cursor_is_monotonic(direct_vm, direct_deploy):
     contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
+    evidence_authority = register_authority(
+        contract, direct_vm, "https://evidence.example", "invariant-queue-e"
+    )
+    notice_authority = register_authority(
+        contract, direct_vm, "https://notice.example", "invariant-queue-n"
+    )
     body = b"evidence"
     notice = b"notice"
     evidence_id = contract.register_evidence(
@@ -82,11 +118,13 @@ def test_case_queue_is_scoped_and_cursor_is_monotonic(direct_vm, direct_deploy):
         len(body),
         "queue",
         "Queue evidence",
+        evidence_authority,
     )
     child = contract.register_claim("queue", "Queue child")
     contract.register_dependency(evidence_id, child, "REQUIRES")
     case_id = contract.open_revocation_case(
         evidence_id,
+        notice_authority,
         "https://notice.example/queue",
         sha(notice),
         len(notice),
