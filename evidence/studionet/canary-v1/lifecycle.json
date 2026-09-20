@@ -1,0 +1,288 @@
+{
+  "active_cause_composition_verified": "LOCAL_TESTS_PASS_LIVE_NOT_REACHED_BECAUSE_REVOCATION_WAS_INCONCLUSIVE",
+  "authority": {
+    "authority_address": "0x7e68eadc3bedff1e508d25cc7f1611d1455b4fc4",
+    "authority_id": "f5d0db56d7bf3eb85e2b5ef02f15ec06170db45d1ada322982e8d382c664f4b3",
+    "canonical_origin": "https://palinode-fixture.vercel.app",
+    "challenge_nonce": "PALINODE_FIXTURE_NONCE_V1",
+    "challenge_uri": "https://palinode-fixture.vercel.app/.well-known/palinode.json",
+    "current_version": "1",
+    "registered_at": "2026-09-20T13:16:50.820220Z",
+    "registered_sequence": "1",
+    "status": "ACTIVE",
+    "verification_policy": "WELL_KNOWN_ADDRESS_NONCE_V1"
+  },
+  "authority_id": "f5d0db56d7bf3eb85e2b5ef02f15ec06170db45d1ada322982e8d382c664f4b3",
+  "chain_id": 61999,
+  "contract_address": "0x712Dbb59F950D0D300d3E89Ed2Ac52db715383E4",
+  "evidence_v1": {
+    "authentication_tx": "0xe2928a118bda85f6ba9d0aeffaa3245e89681fa21216e9d44bb298b68ac1cc17",
+    "id": "1592fbc79ab2eac54ff77a793e237e141277b4dffc589b9f7d84388cdd1e709c",
+    "record": {
+      "assessment_case_id": "c33a6a26f342279d29676b59c6242959cf219c1a30449508ea5f45341209b699",
+      "assessment_sequence": "19",
+      "assessment_status": "PENDING",
+      "assessment_transition_count": "5",
+      "authority_id": "f5d0db56d7bf3eb85e2b5ef02f15ec06170db45d1ada322982e8d382c664f4b3",
+      "authority_version": "1",
+      "authority_version_id": "f5d0db56d7bf3eb85e2b5ef02f15ec06170db45d1ada322982e8d382c664f4b3|1",
+      "byte_length": "241",
+      "content_sha256": "29084e2b0430225ef85d81da3422c0b4a7bdfdf0357845eaec7e1ac0df45e5c2",
+      "created_at": "2026-09-20T13:18:21.526681Z",
+      "creation_sequence": "2",
+      "creator": "0x7e68EAdc3bEDfF1E508D25cC7f1611D1455B4FC4",
+      "historical_validity": "HISTORICAL_ACCEPTED",
+      "node_id": "1592fbc79ab2eac54ff77a793e237e141277b4dffc589b9f7d84388cdd1e709c",
+      "node_type": "EVIDENCE",
+      "source_uri": "https://palinode-fixture.vercel.app/evidence/vendor-audit-v1.json",
+      "status": "SUPERSEDED",
+      "status_transition_count": "1",
+      "subject_id": "fixture-vendor-001",
+      "title": "Fictional audit V1"
+    }
+  },
+  "evidence_v2": {
+    "authentication_tx": "0xe1e9b20400d07ce2125f5ea43e6c55f5ef883d64dd179bb08b5aca5b4fcdd27e",
+    "id": "b8d93db902d8e89673c73468f39c51e3e531997af0293594326231267b05c15a",
+    "record": {
+      "assessment_case_id": "",
+      "assessment_sequence": "16",
+      "assessment_status": "CLEARED",
+      "assessment_transition_count": "2",
+      "authority_id": "f5d0db56d7bf3eb85e2b5ef02f15ec06170db45d1ada322982e8d382c664f4b3",
+      "authority_version": "1",
+      "authority_version_id": "f5d0db56d7bf3eb85e2b5ef02f15ec06170db45d1ada322982e8d382c664f4b3|1",
+      "byte_length": "328",
+      "content_sha256": "c005ac1d5de56b14cb95fbacf6ecddc81386846a3df5bd5a3e28f0498b509ab3",
+      "created_at": "2026-09-20T13:24:41.544921Z",
+      "creation_sequence": "14",
+      "creator": "0x7e68EAdc3bEDfF1E508D25cC7f1611D1455B4FC4",
+      "historical_validity": "HISTORICAL_ACCEPTED",
+      "node_id": "b8d93db902d8e89673c73468f39c51e3e531997af0293594326231267b05c15a",
+      "node_type": "EVIDENCE",
+      "source_uri": "https://palinode-fixture.vercel.app/evidence/vendor-audit-v2.json",
+      "status": "ACTIVE",
+      "status_transition_count": "0",
+      "subject_id": "fixture-vendor-001",
+      "title": "Fictional audit V2 corrected"
+    }
+  },
+  "finality_restart_test": {
+    "resumed_without_resubmission": true,
+    "transaction_id": "0xed7831679d5b96a1c93dded5dc128e6446aa0f3ce06d10860bef0460de2b5441"
+  },
+  "graph": {
+    "claim_id": "1445241cd0152e9abdc984443891a4d68f885cafa2f7da2d418d226d7bca4d96",
+    "decision_id": "24b2d5ce9941acaa9da149f4521bed8c4b97076a3e775be0e58b569d2ad6a669",
+    "edges": [
+      {
+        "active": "True",
+        "child_node_id": "1445241cd0152e9abdc984443891a4d68f885cafa2f7da2d418d226d7bca4d96",
+        "creation_sequence": "7",
+        "edge_id": "b95b9b30222d16154e1f21db72c2cc2eedd740403cf42161f56dab24069321a9",
+        "parent_node_id": "1592fbc79ab2eac54ff77a793e237e141277b4dffc589b9f7d84388cdd1e709c",
+        "relationship": "SUPPORTS"
+      },
+      {
+        "active": "True",
+        "child_node_id": "24b2d5ce9941acaa9da149f4521bed8c4b97076a3e775be0e58b569d2ad6a669",
+        "creation_sequence": "8",
+        "edge_id": "bbee4001ec63ca4f4560d4167e464d2d3c7323b93cb05689e09cf7925f7050c8",
+        "parent_node_id": "1445241cd0152e9abdc984443891a4d68f885cafa2f7da2d418d226d7bca4d96",
+        "relationship": "REQUIRES"
+      }
+    ]
+  },
+  "historical_lineage_verified": true,
+  "network": "studionet",
+  "recovery": {
+    "case": null,
+    "case_id": null,
+    "status": "DEFERRED_NO_MATERIAL_CAUSE"
+  },
+  "revocation": {
+    "active_causes": {
+      "claim": {
+        "active_count": "0",
+        "overflow_commitment": "",
+        "overflow_count": "0",
+        "overflow_latest_case": "",
+        "overflow_severity": "",
+        "slot_count": "0"
+      },
+      "decision": {
+        "active_count": "0",
+        "overflow_commitment": "",
+        "overflow_count": "0",
+        "overflow_latest_case": "",
+        "overflow_severity": "",
+        "slot_count": "0"
+      },
+      "root": {
+        "active_count": "0",
+        "overflow_commitment": "",
+        "overflow_count": "0",
+        "overflow_latest_case": "",
+        "overflow_severity": "",
+        "slot_count": "0"
+      }
+    },
+    "assessment_histories": {
+      "root": {
+        "recent_count": "5",
+        "slot_0": "3|1592fbc79ab2eac54ff77a793e237e141277b4dffc589b9f7d84388cdd1e709c|UNASSESSED|PENDING|",
+        "slot_1": "4|1592fbc79ab2eac54ff77a793e237e141277b4dffc589b9f7d84388cdd1e709c|PENDING|CLEARED|",
+        "slot_2": "10|1592fbc79ab2eac54ff77a793e237e141277b4dffc589b9f7d84388cdd1e709c|CLEARED|PENDING|c33a6a26f342279d29676b59c6242959cf219c1a30449508ea5f45341209b699",
+        "slot_3": "12|1592fbc79ab2eac54ff77a793e237e141277b4dffc589b9f7d84388cdd1e709c|PENDING|INCONCLUSIVE|c33a6a26f342279d29676b59c6242959cf219c1a30449508ea5f45341209b699",
+        "slot_4": "19|1592fbc79ab2eac54ff77a793e237e141277b4dffc589b9f7d84388cdd1e709c|INCONCLUSIVE|PENDING|c33a6a26f342279d29676b59c6242959cf219c1a30449508ea5f45341209b699",
+        "total_count": "5"
+      }
+    },
+    "case_after_retry": {
+      "adjudicated_at": "2026-09-20T13:23:41.800450Z",
+      "adjudicated_sequence": "11",
+      "assessment_count": "0",
+      "case_id": "c33a6a26f342279d29676b59c6242959cf219c1a30449508ea5f45341209b699",
+      "case_status": "INCONCLUSIVE",
+      "evidence_retrieval_uri": "https://palinode-fixture.vercel.app/evidence/vendor-audit-v1.json",
+      "materiality": "INCONCLUSIVE",
+      "notice_authority_id": "f5d0db56d7bf3eb85e2b5ef02f15ec06170db45d1ada322982e8d382c664f4b3",
+      "notice_authority_version": "1",
+      "notice_byte_length": "278",
+      "notice_retrieval_uri": "https://palinode-fixture.vercel.app/notices/vendor-audit-v1-revoked.json",
+      "notice_sha256": "0a735d8344897f0406bf84f2bd62b9bae55898d0e45ca670a001597a6a53492f",
+      "notice_uri": "https://palinode-fixture.vercel.app/notices/vendor-audit-v1-revoked.json",
+      "opened_at": "2026-09-20T13:22:56.522085Z",
+      "opened_sequence": "9",
+      "reason_code": "LLM_MALFORMED",
+      "result_status": "RETRYABLE",
+      "retry_count": "1",
+      "root_effect": "INCONCLUSIVE",
+      "semantic_verdict": "INCONCLUSIVE",
+      "submitter": "0x7e68EAdc3bEDfF1E508D25cC7f1611D1455B4FC4",
+      "target_assessment_status": "PENDING",
+      "target_evidence_id": "1592fbc79ab2eac54ff77a793e237e141277b4dffc589b9f7d84388cdd1e709c",
+      "target_reliance_status": "SUPERSEDED"
+    },
+    "case_final": {
+      "adjudicated_at": "2026-09-20T13:23:41.800450Z",
+      "adjudicated_sequence": "11",
+      "assessment_count": "0",
+      "case_id": "c33a6a26f342279d29676b59c6242959cf219c1a30449508ea5f45341209b699",
+      "case_status": "INCONCLUSIVE",
+      "evidence_retrieval_uri": "https://palinode-fixture.vercel.app/evidence/vendor-audit-v1.json",
+      "materiality": "INCONCLUSIVE",
+      "notice_authority_id": "f5d0db56d7bf3eb85e2b5ef02f15ec06170db45d1ada322982e8d382c664f4b3",
+      "notice_authority_version": "1",
+      "notice_byte_length": "278",
+      "notice_retrieval_uri": "https://palinode-fixture.vercel.app/notices/vendor-audit-v1-revoked.json",
+      "notice_sha256": "0a735d8344897f0406bf84f2bd62b9bae55898d0e45ca670a001597a6a53492f",
+      "notice_uri": "https://palinode-fixture.vercel.app/notices/vendor-audit-v1-revoked.json",
+      "opened_at": "2026-09-20T13:22:56.522085Z",
+      "opened_sequence": "9",
+      "reason_code": "LLM_MALFORMED",
+      "result_status": "RETRYABLE",
+      "retry_count": "1",
+      "root_effect": "INCONCLUSIVE",
+      "semantic_verdict": "INCONCLUSIVE",
+      "submitter": "0x7e68EAdc3bEDfF1E508D25cC7f1611D1455B4FC4",
+      "target_assessment_status": "PENDING",
+      "target_evidence_id": "1592fbc79ab2eac54ff77a793e237e141277b4dffc589b9f7d84388cdd1e709c",
+      "target_reliance_status": "SUPERSEDED"
+    },
+    "case_id": "c33a6a26f342279d29676b59c6242959cf219c1a30449508ea5f45341209b699",
+    "claim": {
+      "assessment_case_id": "",
+      "assessment_sequence": "0",
+      "assessment_status": "UNASSESSED",
+      "assessment_transition_count": "0",
+      "authority_id": "",
+      "authority_version": "0",
+      "authority_version_id": "|0",
+      "byte_length": "0",
+      "content_sha256": "",
+      "created_at": "2026-09-20T13:19:52.821977Z",
+      "creation_sequence": "5",
+      "creator": "0x7e68EAdc3bEDfF1E508D25cC7f1611D1455B4FC4",
+      "historical_validity": "HISTORICAL_ACCEPTED",
+      "node_id": "1445241cd0152e9abdc984443891a4d68f885cafa2f7da2d418d226d7bca4d96",
+      "node_type": "CLAIM",
+      "source_uri": "",
+      "status": "ACTIVE",
+      "status_transition_count": "0",
+      "subject_id": "fixture-vendor-001",
+      "title": "Claim depending on fictional audit V1"
+    },
+    "decision": {
+      "assessment_case_id": "",
+      "assessment_sequence": "0",
+      "assessment_status": "UNASSESSED",
+      "assessment_transition_count": "0",
+      "authority_id": "",
+      "authority_version": "0",
+      "authority_version_id": "|0",
+      "byte_length": "0",
+      "content_sha256": "",
+      "created_at": "2026-09-20T13:20:36.798811Z",
+      "creation_sequence": "6",
+      "creator": "0x7e68EAdc3bEDfF1E508D25cC7f1611D1455B4FC4",
+      "historical_validity": "HISTORICAL_ACCEPTED",
+      "node_id": "24b2d5ce9941acaa9da149f4521bed8c4b97076a3e775be0e58b569d2ad6a669",
+      "node_type": "DECISION",
+      "source_uri": "",
+      "status": "ACTIVE",
+      "status_transition_count": "0",
+      "subject_id": "fixture-vendor-001",
+      "title": "Decision depending on the claim"
+    },
+    "impact_queue": {
+      "case_status": "INCONCLUSIVE",
+      "cursor": "0",
+      "processed_steps": "0",
+      "queue_length": "0"
+    },
+    "retry_telemetry": {
+      "recent_count": "2",
+      "slot_0": "13|LLM_MALFORMED",
+      "slot_1": "18|RETRY_REQUESTED",
+      "total_count": "2"
+    },
+    "root": {
+      "assessment_case_id": "c33a6a26f342279d29676b59c6242959cf219c1a30449508ea5f45341209b699",
+      "assessment_sequence": "19",
+      "assessment_status": "PENDING",
+      "assessment_transition_count": "5",
+      "authority_id": "f5d0db56d7bf3eb85e2b5ef02f15ec06170db45d1ada322982e8d382c664f4b3",
+      "authority_version": "1",
+      "authority_version_id": "f5d0db56d7bf3eb85e2b5ef02f15ec06170db45d1ada322982e8d382c664f4b3|1",
+      "byte_length": "241",
+      "content_sha256": "29084e2b0430225ef85d81da3422c0b4a7bdfdf0357845eaec7e1ac0df45e5c2",
+      "created_at": "2026-09-20T13:18:21.526681Z",
+      "creation_sequence": "2",
+      "creator": "0x7e68EAdc3bEDfF1E508D25cC7f1611D1455B4FC4",
+      "historical_validity": "HISTORICAL_ACCEPTED",
+      "node_id": "1592fbc79ab2eac54ff77a793e237e141277b4dffc589b9f7d84388cdd1e709c",
+      "node_type": "EVIDENCE",
+      "source_uri": "https://palinode-fixture.vercel.app/evidence/vendor-audit-v1.json",
+      "status": "SUPERSEDED",
+      "status_transition_count": "1",
+      "subject_id": "fixture-vendor-001",
+      "title": "Fictional audit V1"
+    },
+    "status_histories": {
+      "claim": {
+        "recent_count": "0",
+        "total_count": "0"
+      },
+      "decision": {
+        "recent_count": "0",
+        "total_count": "0"
+      },
+      "root": {
+        "recent_count": "1",
+        "slot_0": "17|1592fbc79ab2eac54ff77a793e237e141277b4dffc589b9f7d84388cdd1e709c|ACTIVE|SUPERSEDED|SUCCESSOR_LINK|",
+        "total_count": "1"
+      }
+    }
+  }
+}

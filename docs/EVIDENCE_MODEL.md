@@ -15,7 +15,7 @@
 - bounded subject identifier;
 - bounded human-readable title; and
 - current reliance status, initialized to `ACTIVE`;
-- separate assessment status, initialized to `UNASSESSED`.
+- separate authentication status, initialized to `UNASSESSED`.
 
 Full source bodies are not stored on-chain.
 
@@ -65,14 +65,16 @@ dimensions directly:
 
 | Dimension | Values | Meaning |
 |---|---|---|
-| `assessment_status` | `UNASSESSED`, `PENDING`, `CLEARED`, `REJECTED`, `INCONCLUSIVE`, `SOURCE_UNAVAILABLE` | Latest explicit semantic review state |
-| `status` | `ACTIVE`, `QUESTIONED`, `UNDER_REVIEW`, `QUARANTINED`, `SUPERSEDED`, `INVALIDATED`, `REINSTATED`, `INCONCLUSIVE` | Current downstream reliance state |
+| `authentication_status` | `UNASSESSED`, `PENDING`, `CLEARED`, `REJECTED`, `INCONCLUSIVE`, `SOURCE_UNAVAILABLE` | Whether the authority-bound committed source identity was authenticated |
+| `reliance_status` | `ACTIVE`, `QUESTIONED`, `UNDER_REVIEW`, `QUARANTINED`, `SUPERSEDED`, `INVALIDATED`, `REINSTATED`, `INCONCLUSIVE` | Current downstream reliance state |
 
-New nodes are `UNASSESSED` and `ACTIVE`. Opening an adverse case moves the
-assessment dimension to `PENDING`; it does not itself change reliance. A
-conclusive immaterial review produces `CLEARED`. A material review produces
-`REJECTED` and then applies its typed reliance root effect. Infrastructure
-failure produces `SOURCE_UNAVAILABLE`, never a semantic success.
+New nodes are `UNASSESSED` and `ACTIVE`. Only `authenticate_evidence` can
+change `authentication_status`; opening, retrying, or assessing a revocation
+case never rewrites it. Authentication proves only the exact authority-bound
+source availability, SHA-256, and byte length. Revocation review has its own
+case status, result, materiality, and root-effect fields. The case may change
+reliance without changing authentication: authenticated bytes can later become
+unsafe to rely on while remaining historically authenticated.
 
 ## Source-authority binding
 

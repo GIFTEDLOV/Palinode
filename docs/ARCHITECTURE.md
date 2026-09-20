@@ -22,8 +22,9 @@ The contract has three layers:
 2. Isolated semantic adjudication: bounded HTTPS retrieval and a constrained
    LLM result inside `gl.vm.run_nondet_unsafe`; pure evidence authentication
    uses deterministic digest/length comparison without an LLM.
-3. Deterministic consequences: result persistence, separate assessment and
-   reliance transitions, root impact, and resumable edge-by-edge propagation.
+3. Deterministic consequences: separate evidence authentication, case review,
+   and reliance state; result persistence; root impact; and resumable
+   edge-by-edge propagation. Revocation review never rewrites authentication.
 4. Cause-aware recovery: an immutable recovery case can resolve only the
    adverse cause named in its identity, then process the same typed graph in a
    bounded resumable queue.

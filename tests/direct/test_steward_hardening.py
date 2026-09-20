@@ -89,6 +89,8 @@ def mock_semantic(direct_vm, evidence_uri, notice_uri, notice_body, result):
 
 def immaterial_result():
     return {
+        "result_status": "CONCLUSIVE",
+        "result_status": "CONCLUSIVE",
         "change_authentic": False,
         "same_subject": True,
         "original_evidence_affected": False,
@@ -100,6 +102,8 @@ def immaterial_result():
 
 def material_result():
     return {
+        "result_status": "CONCLUSIVE",
+        "result_status": "CONCLUSIVE",
         "change_authentic": True,
         "same_subject": True,
         "original_evidence_affected": True,
@@ -115,17 +119,22 @@ def test_registration_is_unassessed_and_cleared_is_distinct(direct_vm, direct_de
     evidence_id = evidence(contract, evidence_authority)
     initial = contract.get_node_record(evidence_id)
     assert initial["assessment_status"] == "UNASSESSED"
+    assert initial["authentication_status"] == "UNASSESSED"
     assert initial["status"] == "ACTIVE"
 
+    direct_vm.mock_web(re.escape(EVIDENCE_URI), {"status": 200, "body": EVIDENCE_BODY})
+    contract.authenticate_evidence(evidence_id)
+    direct_vm.clear_mocks()
+    assert contract.get_node_record(evidence_id)["authentication_status"] == "CLEARED"
     notice_body = b"No authentic change was found."
     case_id = open_case(contract, evidence_authority, notice_authority, evidence_id, notice_body=notice_body)
-    assert contract.get_node_record(evidence_id)["assessment_status"] == "PENDING"
+    assert contract.get_node_record(evidence_id)["authentication_status"] == "CLEARED"
     mock_semantic(direct_vm, EVIDENCE_URI, NOTICE_URI, notice_body, immaterial_result())
     contract.assess_revocation(case_id)
     cleared = contract.get_node_record(evidence_id)
-    assert cleared["assessment_status"] == "CLEARED"
+    assert cleared["authentication_status"] == "CLEARED"
     assert cleared["status"] == "ACTIVE"
-    assert cleared["assessment_status"] != cleared["status"]
+    assert cleared["reliance_status"] == "ACTIVE"
 
 
 def test_third_party_can_open_challenge_and_owner_has_no_suppression_path(direct_vm, direct_deploy):
@@ -136,7 +145,7 @@ def test_third_party_can_open_challenge_and_owner_has_no_suppression_path(direct
         case_id = open_case(contract, evidence_authority, notice_authority, evidence_id)
     case_record = contract.get_revocation_case(case_id)
     assert case_record["submitter"] == "0x" + "b" * 40
-    assert contract.get_node_record(evidence_id)["assessment_status"] == "PENDING"
+    assert contract.get_node_record(evidence_id)["assessment_status"] == "UNASSESSED"
     assert not hasattr(contract, "suppress_case")
     assert not hasattr(contract, "override_verdict")
     assert not hasattr(contract, "delete_case")
@@ -235,7 +244,7 @@ def test_duplicate_and_different_notices_are_independent(direct_vm, direct_deplo
     contract.assess_revocation(second_case)
     assert contract.get_revocation_case(first_case)["case_status"] == "COMPLETE"
     assert contract.get_revocation_case(second_case)["case_status"] == "COMPLETE"
-    assert contract.get_node_record(evidence_id)["assessment_status"] == "REJECTED"
+    assert contract.get_node_record(evidence_id)["assessment_status"] == "UNASSESSED"
 
 
 def test_reassessment_uses_locked_case_identity_not_caller_substitution(direct_vm, direct_deploy):
@@ -263,11 +272,14 @@ def test_source_unavailable_has_permissionless_mirror_recovery_without_identity_
     evidence_authority, notice_authority = authorities(contract, direct_vm, "recovery")
     evidence_id = evidence(contract, evidence_authority)
     notice_body = b"Recoverable notice"
+    direct_vm.mock_web(re.escape(EVIDENCE_URI), {"status": 200, "body": EVIDENCE_BODY})
+    contract.authenticate_evidence(evidence_id)
+    direct_vm.clear_mocks()
     case_id = open_case(contract, evidence_authority, notice_authority, evidence_id, notice_body=notice_body)
 
     contract.assess_revocation(case_id)
     unavailable = contract.get_node_record(evidence_id)
-    assert unavailable["assessment_status"] == "SOURCE_UNAVAILABLE"
+    assert unavailable["authentication_status"] == "CLEARED"
     locked = contract.get_revocation_case(case_id)
     assert locked["case_status"] == "INCONCLUSIVE"
 
@@ -285,12 +297,12 @@ def test_source_unavailable_has_permissionless_mirror_recovery_without_identity_
     assert recovered["notice_byte_length"] == locked["notice_byte_length"]
     assert recovered["evidence_retrieval_uri"] == evidence_mirror
     assert recovered["notice_retrieval_uri"] == notice_mirror
-    assert contract.get_node_record(evidence_id)["assessment_status"] == "PENDING"
+    assert contract.get_node_record(evidence_id)["authentication_status"] == "CLEARED"
 
     direct_vm.clear_mocks()
     mock_semantic(direct_vm, evidence_mirror, notice_mirror, notice_body, immaterial_result())
     contract.assess_revocation(case_id)
-    assert contract.get_node_record(evidence_id)["assessment_status"] == "CLEARED"
+    assert contract.get_node_record(evidence_id)["authentication_status"] == "CLEARED"
 
 
 def test_mirror_mismatch_cannot_rewrite_locked_identity(direct_vm, direct_deploy):

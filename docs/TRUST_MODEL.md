@@ -55,10 +55,12 @@ the separate node status state machine and status history. Thus an object can
 remain historically accepted while currently `QUESTIONED`, `QUARANTINED`,
 `SUPERSEDED`, or `INVALIDATED`.
 
-Registration and assessment are separate: a new node is `UNASSESSED`, not
-consensus-cleared. `get_node_record` exposes `assessment_status` and `status`
-simultaneously. `SOURCE_UNAVAILABLE` is an explicit liveness state, not a
-semantic rejection or clearance. Any caller may retry through digest-verified
+Registration and authentication are separate: a new node is `UNASSESSED`, not
+consensus-cleared. `get_node_record` exposes `authentication_status` (with the
+legacy `assessment_status` alias) and `reliance_status` simultaneously.
+`SOURCE_UNAVAILABLE` is an explicit authentication liveness state, not a
+semantic rejection or clearance. Revocation review is case-scoped and cannot
+rewrite authentication. Any caller may retry through digest-verified
 cross-origin retrieval mirrors without changing the locked evidence identity.
 Mirrors are not authority records and cannot clear an object by themselves.
 
@@ -74,6 +76,7 @@ wait for the GenLayer Intelligent Contract transaction to reach its applicable
 final status before treating a semantic result or propagation mutation as
 final. `ACCEPTED` is tracked separately from execution success and finalization.
 The application layer must persist the transaction ID and resume polling it
-after timeouts rather than resubmitting automatically. This repository has not
-deployed or called Studionet in Phase 2: the canary is gated until local
-integration and a controlled live authority fixture are available.
+after timeouts rather than resubmitting automatically. The archived Phase 2.5
+canary is recorded under `evidence/studionet/canary-v1/`; it is not the final
+deployment and is not upgraded in place. The corrected Phase 2.6 canary remains
+gated on the local security suite and controlled live lifecycle.

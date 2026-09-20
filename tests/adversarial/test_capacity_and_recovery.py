@@ -90,6 +90,7 @@ def open_material_case(contract, direct_vm, notice_authority, old_id, old_body, 
         r"PALINODE semantic adjudicator",
         json.dumps(
             {
+                "result_status": "CONCLUSIVE",
                 "change_authentic": True,
                 "same_subject": True,
                 "original_evidence_affected": True,
@@ -222,7 +223,7 @@ def test_recovery_requires_material_cause_and_rejects_unsupported_effect(direct_
     direct_vm.mock_web(re.escape(notice_uri), {"status": 200, "body": notice_body})
     direct_vm.mock_llm(
         r"PALINODE semantic adjudicator",
-        json.dumps({"change_authentic": False, "same_subject": True, "original_evidence_affected": False, "materiality": "IMMATERIAL", "root_effect": "NO_CHANGE", "reason_code": "NO_AUTHENTIC_CHANGE"}),
+        json.dumps({"result_status": "CONCLUSIVE", "change_authentic": False, "same_subject": True, "original_evidence_affected": False, "materiality": "IMMATERIAL", "root_effect": "NO_CHANGE", "reason_code": "NO_AUTHENTIC_CHANGE"}),
     )
     contract.assess_revocation(case_id)
     direct_vm.clear_mocks()
@@ -266,6 +267,8 @@ def test_single_cause_recovery_restores_root_and_descendant(direct_vm, direct_de
     contract.process_recovery_impact(recovery_id, 1)
     assert contract.get_recovery_case(recovery_id)["case_status"] == "COMPLETE"
     assert contract.get_node_record(old_id)["status"] == "REINSTATED"
+    assert contract.get_node_record(old_id)["authentication_status"] == "CLEARED"
+    assert contract.get_node_record(successor_id)["authentication_status"] == "CLEARED"
     assert contract.get_node_record(child_id)["status"] == "REINSTATED"
     assert contract.get_revocation_case(case_id)["case_status"] == "COMPLETE"
 
@@ -284,6 +287,7 @@ def test_two_active_causes_require_two_successful_recoveries(direct_vm, direct_d
     assess_recovery(contract, direct_vm, recovery_b, EVIDENCE_ORIGIN + "/successor", successor_body, notice_b, body_b, recovery_result())
     contract.process_recovery_impact(recovery_b, 32)
     assert contract.get_node_record(old_id)["status"] == "REINSTATED"
+    assert contract.get_node_record(old_id)["authentication_status"] == "CLEARED"
     assert contract.get_node_record(child_id)["status"] == "REINSTATED"
     active = contract.get_active_causes(old_id)
     assert active["active_count"] == "0"

@@ -46,3 +46,17 @@ permissionless retry path finalized without substituting a new notice. No
 recovery case was opened because recovery requires a conclusive material active
 cause. The result is deliberately recorded as a live limitation, not hidden as
 a successful semantic verdict.
+
+## Phase 2.6 closure findings
+
+| Finding | Severity | Exploitable before fix? | Fix | Proof |
+|---|---|---|---|---|
+| Revocation opening, retry, and semantic commit reused the evidence authentication state | Critical | Yes: a later review could make genuinely authenticated bytes appear unauthenticated or falsely cleared | Removed every review-path authentication transition; added explicit `authentication_status`/`reliance_status` view fields and kept review state on the case | direct authentication/revocation separation tests and the three review-path mutation guards |
+| Live semantic output was normalized into accepted `RETRYABLE/LLM_MALFORMED` state before validator rejection | Critical | Yes: a malformed provider response could become consensus state instead of causing rotation/rejection | Shared exact seven-field validator; valid decoded JSON is accepted, malformed candidates are returned for validator rejection, and only explicit infrastructure failures create validated retryable results | live seven-field regression, malformed leader rejection, validator disagreement, and malformed-output mutations |
+| Archived canary evidence could be mistaken for the corrected deployment | High | Evidence-quality risk | Archive canary-v1 separately and require canary-v2 artifacts/address for the corrected source | `evidence/studionet/canary-v1/` plus Phase 2.6 deployment gate |
+
+The archived malformed transaction was traceable to the contract's strict
+normalizer fallback; the available Studionet endpoint did not expose the raw
+provider payload needed to distinguish the exact malformed field. The complete
+analysis and the evidence limitation are recorded in
+`docs/LIVE_SEMANTIC_FAILURE_ANALYSIS.md`.

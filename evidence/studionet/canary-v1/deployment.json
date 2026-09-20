@@ -1,0 +1,20 @@
+{
+  "balance_wei_before": "0",
+  "chain_id": 61999,
+  "contract_address": "0x712Dbb59F950D0D300d3E89Ed2Ac52db715383E4",
+  "contract_sha256": "eb39390b9da51e70aa54af130c1d45ab392c1b85d327975c462df5d5f10984be",
+  "deployer_address": "0x7e68EAdc3bEDfF1E508D25cC7f1611D1455B4FC4",
+  "deployment_tx_id": "0xdfc919f95a0276be9381a3e38d871e0b45e4ec14ed4040f13f6257d758098ddc",
+  "execution_result": "FINISHED_WITH_RETURN",
+  "tool_versions": {
+    "python": "3.14.3",
+    "genlayer-py": "0.16.3",
+    "genlayer-test": "0.29.2",
+    "genvm-linter": "0.11.0",
+    "genvm_version": "v0.2.16"
+  },
+  "network": "studionet",
+  "private_key_in_git": false,
+  "rpc_url": "https://studio.genlayer.com/api",
+  "status": "FINALIZED_SUCCESS"
+}

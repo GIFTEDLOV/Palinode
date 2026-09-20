@@ -7,10 +7,11 @@ PALINODE is a semantic revocation graph.  Its contract state is the canonical
 record of immutable nodes, immutable dependency edges, revocation cases,
 bounded impact work queues, and deterministic status transitions.
 
-The only nondeterministic operation is the bounded semantic adjudication in
-``assess_revocation``.  That operation returns a small, validated result.  It
-never reads or writes contract storage and never traverses the graph.  All
-canonical mutations happen after the consensus boundary.
+Nondeterministic operations are limited to authority-domain verification,
+evidence authentication, mirror verification, semantic revocation, and
+cause-bound recovery. Each returns a small, validated result and never writes
+contract storage or traverses the graph. All canonical mutations happen after
+the applicable consensus boundary.
 """
 
 from genlayer import *
@@ -527,18 +528,12 @@ def _retryable_result(reason_code: str) -> dict[str, object]:
     }
 
 
-def _normalise_llm_result(raw: object) -> dict[str, object]:
-    """Accept only the exact bounded semantic response shape."""
-    candidate = raw
-    if isinstance(raw, str):
-        try:
-            candidate = json.loads(raw)
-        except Exception:
-            return _retryable_result("LLM_MALFORMED")
-    if not isinstance(candidate, dict):
-        return _retryable_result("LLM_MALFORMED")
-
+def _valid_semantic_result_shape(result: object) -> bool:
+    """Validate the complete consensus-critical revocation result shape."""
+    if not isinstance(result, dict):
+        return False
     required = (
+        "result_status",
         "change_authentic",
         "same_subject",
         "original_evidence_affected",
@@ -546,61 +541,74 @@ def _normalise_llm_result(raw: object) -> dict[str, object]:
         "root_effect",
         "reason_code",
     )
+    if len(result) != len(required):
+        return False
     for key in required:
-        if key not in candidate:
-            return _retryable_result("LLM_MALFORMED")
-    if len(candidate) != len(required):
-        return _retryable_result("LLM_MALFORMED")
+        if key not in result:
+            return False
+    if result["result_status"] not in (RESULT_CONCLUSIVE, RESULT_RETRYABLE):
+        return False
+    for key in ("change_authentic", "same_subject", "original_evidence_affected"):
+        if not isinstance(result[key], bool):
+            return False
+    if result["materiality"] not in MATERIALITIES[1:]:
+        return False
+    if result["root_effect"] not in ROOT_EFFECTS[1:]:
+        return False
+    if result["reason_code"] not in SEMANTIC_REASON_CODES:
+        return False
 
-    change_authentic = candidate["change_authentic"]
-    same_subject = candidate["same_subject"]
-    original_affected = candidate["original_evidence_affected"]
-    materiality = candidate["materiality"]
-    root_effect = candidate["root_effect"]
-    reason_code = candidate["reason_code"]
-    if not isinstance(change_authentic, bool):
-        return _retryable_result("LLM_MALFORMED")
-    if not isinstance(same_subject, bool):
-        return _retryable_result("LLM_MALFORMED")
-    if not isinstance(original_affected, bool):
-        return _retryable_result("LLM_MALFORMED")
-    if materiality not in (VERDICT_MATERIAL, VERDICT_IMMATERIAL, VERDICT_INCONCLUSIVE):
-        return _retryable_result("LLM_MALFORMED")
-    if root_effect not in ROOT_EFFECTS[1:]:
-        return _retryable_result("LLM_MALFORMED")
-    if reason_code not in SEMANTIC_REASON_CODES:
-        return _retryable_result("LLM_MALFORMED")
+    if result["result_status"] == RESULT_RETRYABLE:
+        # A malformed provider response is rejected at the nondeterministic
+        # boundary. It is never converted into an accepted retryable result.
+        return (
+            result["materiality"] == VERDICT_INCONCLUSIVE
+            and result["root_effect"] == ROOT_INCONCLUSIVE
+            and result["reason_code"] in (
+                "SOURCE_UNAVAILABLE",
+                "SOURCE_HTTP_ERROR",
+                "SOURCE_TOO_LARGE",
+                "SOURCE_ENCODING_ERROR",
+                "SOURCE_DIGEST_MISMATCH",
+                "LLM_FAILURE",
+            )
+        )
 
-    if materiality == VERDICT_MATERIAL:
-        if not change_authentic or not same_subject or not original_affected:
-            return _retryable_result("LLM_MALFORMED")
-        if root_effect not in (ROOT_INVALIDATE, ROOT_QUESTION):
-            return _retryable_result("LLM_MALFORMED")
-        if not reason_code.startswith("MATERIAL_"):
-            return _retryable_result("LLM_MALFORMED")
-    elif materiality == VERDICT_IMMATERIAL:
-        if root_effect != ROOT_NO_CHANGE:
-            return _retryable_result("LLM_MALFORMED")
-        if reason_code not in (
-            "IMMATERIAL_CORRECTION",
-            "NO_AUTHENTIC_CHANGE",
-            "DIFFERENT_SUBJECT",
-            "NOT_ORIGINAL_EVIDENCE",
-        ):
-            return _retryable_result("LLM_MALFORMED")
-    else:
-        if root_effect != ROOT_INCONCLUSIVE or reason_code != "SEMANTIC_INCONCLUSIVE":
-            return _retryable_result("LLM_MALFORMED")
+    if result["materiality"] == VERDICT_MATERIAL:
+        return (
+            result["change_authentic"]
+            and result["same_subject"]
+            and result["original_evidence_affected"]
+            and result["root_effect"] in (ROOT_INVALIDATE, ROOT_QUESTION)
+            and str(result["reason_code"]).startswith("MATERIAL_")
+        )
+    if result["materiality"] == VERDICT_IMMATERIAL:
+        return (
+            result["root_effect"] == ROOT_NO_CHANGE
+            and result["reason_code"] in (
+                "IMMATERIAL_CORRECTION",
+                "NO_AUTHENTIC_CHANGE",
+                "DIFFERENT_SUBJECT",
+                "NOT_ORIGINAL_EVIDENCE",
+            )
+        )
+    return result["root_effect"] == ROOT_INCONCLUSIVE and result["reason_code"] == "SEMANTIC_INCONCLUSIVE"
 
-    return {
-        "result_status": RESULT_CONCLUSIVE,
-        "change_authentic": change_authentic,
-        "same_subject": same_subject,
-        "original_evidence_affected": original_affected,
-        "materiality": materiality,
-        "root_effect": root_effect,
-        "reason_code": reason_code,
-    }
+
+def _normalise_llm_result(raw: object) -> object:
+    """Return only a validated result; preserve malformed candidates for rejection."""
+    candidate = raw
+    if isinstance(raw, str):
+        try:
+            candidate = json.loads(raw)
+        except Exception:
+            return candidate
+    if _valid_semantic_result_shape(candidate):
+        return candidate
+    # The validator must see and reject malformed candidates. Returning a
+    # synthetic LLM_MALFORMED result here would make malformed model output a
+    # consensus state and would bypass leader rotation.
+    return candidate
 
 
 def _fetch_bounded_body(uri: str, maximum: int) -> tuple[bytes, str]:
@@ -1059,7 +1067,7 @@ def _semantic_evaluation(
     notice_uri: str,
     notice_digest: str,
     notice_byte_length: u256,
-) -> dict[str, object]:
+) -> object:
     """Leader/validator work only; no storage access or graph traversal."""
     evidence_text, evidence_error = _fetch_semantic_page(evidence_uri)
     if evidence_error != "":
@@ -1085,15 +1093,20 @@ it? Do not decide whether a broad topic is true. Decide only this registered
 dependency question.
 
 Return ONLY a JSON object with exactly these keys:
+result_status (CONCLUSIVE or RETRYABLE),
 change_authentic (boolean), same_subject (boolean),
 original_evidence_affected (boolean), materiality (MATERIAL, IMMATERIAL, or
 INCONCLUSIVE), root_effect (INVALIDATE, QUESTION, NO_CHANGE, or INCONCLUSIVE),
 reason_code (one of the explicitly allowed codes).
 
-MATERIAL requires an authentic change, the same subject, and an effect on the
-original evidence. MATERIAL must use INVALIDATE or QUESTION and a
-MATERIAL_* reason code. IMMATERIAL must use NO_CHANGE. Ambiguity must use
-INCONCLUSIVE and SEMANTIC_INCONCLUSIVE. Do not return prose or extra keys.
+CONCLUSIVE is required for a semantic result. RETRYABLE is reserved for a
+source or LLM infrastructure failure and must use INCONCLUSIVE,
+INCONCLUSIVE, and the matching explicit failure reason. Never use RETRYABLE
+for a malformed response. MATERIAL requires an authentic change, the same
+subject, and an effect on the original evidence. MATERIAL must use INVALIDATE
+or QUESTION and a MATERIAL_* reason code. IMMATERIAL must use NO_CHANGE.
+Ambiguity must use INCONCLUSIVE and SEMANTIC_INCONCLUSIVE. Do not return
+prose or extra keys.
 
 <registered_evidence_metadata>
 subject_id: <data>{subject_id}</data>
@@ -1117,7 +1130,7 @@ current_retrieved_sha256: <data>{current_evidence_digest}</data>
 
 
 def _semantic_results_equal(left: object, right: dict[str, object]) -> bool:
-    if not isinstance(left, dict):
+    if not _valid_semantic_result_shape(left) or not _valid_semantic_result_shape(right):
         return False
     keys = (
         "result_status",
@@ -2095,8 +2108,9 @@ class Palinode(gl.Contract):
         self.case_cursor[case_id] = u256(0)
         self.case_processed_steps[case_id] = u256(0)
         self.case_root_node_effect[case_id] = ""
-        if self.node_assessment_status[target_evidence_id] != ASSESS_PENDING:
-            self._transition_assessment(target_evidence_id, ASSESS_PENDING, case_id)
+        # Opening a review case must not mutate authentication. The committed
+        # source identity remains UNASSESSED/CLEARED/etc.; review progress is
+        # represented by this case's own state and result fields.
         return case_id
 
     def _record_retry_telemetry(self, case_id: str, reason: str) -> None:
@@ -2241,43 +2255,11 @@ class Palinode(gl.Contract):
         self.case_notice_retrieval_uri[case_id] = notice_uri
         self.case_retry_count[case_id] = self.case_retry_count[case_id] + u256(1)
         self._record_retry_telemetry(case_id, "RETRY_REQUESTED")
-        if self.node_assessment_status[target] != ASSESS_PENDING:
-            self._transition_assessment(target, ASSESS_PENDING, case_id)
+        # A retry is review progress, not a source re-authentication request.
+        # The retry changes retrieval pointers and case telemetry only.
 
     def _validate_semantic_result(self, result: object) -> bool:
-        if not isinstance(result, dict):
-            return False
-        keys = (
-            "result_status",
-            "change_authentic",
-            "same_subject",
-            "original_evidence_affected",
-            "materiality",
-            "root_effect",
-            "reason_code",
-        )
-        for key in keys:
-            if key not in result:
-                return False
-        if len(result) != len(keys):
-            return False
-        if result["result_status"] not in RESULT_STATUSES[1:]:
-            return False
-        if not isinstance(result["change_authentic"], bool):
-            return False
-        if not isinstance(result["same_subject"], bool):
-            return False
-        if not isinstance(result["original_evidence_affected"], bool):
-            return False
-        if result["materiality"] not in MATERIALITIES[1:]:
-            return False
-        if result["root_effect"] not in ROOT_EFFECTS[1:]:
-            return False
-        if result["reason_code"] not in SEMANTIC_REASON_CODES:
-            return False
-        if result["result_status"] == RESULT_RETRYABLE:
-            return result["materiality"] == VERDICT_INCONCLUSIVE and result["root_effect"] == ROOT_INCONCLUSIVE
-        return result["materiality"] != VERDICT_PENDING
+        return _valid_semantic_result_shape(result)
 
     def _transition_node(
         self,
@@ -2372,27 +2354,6 @@ class Palinode(gl.Contract):
             history[int(cursor % u256(MAX_RECENT_HISTORY_ENTRIES))] = record
         cursor_map[node_id] = cursor + u256(1)
         total_map[node_id] = total_map[node_id] + u256(1)
-
-    def _assessment_status_for_result(self, result: dict[str, object]) -> str:
-        if result["result_status"] == RESULT_RETRYABLE:
-            reason_code = result["reason_code"]
-            if reason_code in (
-                "SOURCE_UNAVAILABLE",
-                "SOURCE_HTTP_ERROR",
-                "SOURCE_TOO_LARGE",
-                "SOURCE_ENCODING_ERROR",
-                "SOURCE_DIGEST_MISMATCH",
-            ):
-                return ASSESS_SOURCE_UNAVAILABLE
-            return ASSESS_INCONCLUSIVE
-        if result["materiality"] == VERDICT_MATERIAL:
-            return ASSESS_REJECTED
-        if result["materiality"] == VERDICT_IMMATERIAL:
-            return ASSESS_CLEARED
-        return ASSESS_INCONCLUSIVE
-
-    def _is_source_unavailable_result(self, result: dict[str, object]) -> bool:
-        return self._assessment_status_for_result(result) == ASSESS_SOURCE_UNAVAILABLE
 
     def _ordinary_severity(self, status: str) -> int:
         severity = {
@@ -2570,10 +2531,7 @@ class Palinode(gl.Contract):
         self.case_adjudicated_sequence[case_id] = self._take_sequence()
         self.case_adjudicated_at[case_id] = self._tx_datetime()
         target = self.case_target_evidence[case_id]
-        assessment_status = self._assessment_status_for_result(result)
-        if self.node_assessment_status[target] != assessment_status:
-            self._transition_assessment(target, assessment_status, case_id)
-
+        # Revocation review mutates the case and reliance causes, never authentication.
         if result_status == RESULT_RETRYABLE or materiality == VERDICT_INCONCLUSIVE:
             self._record_retry_telemetry(case_id, cast(str, result["reason_code"]))
             self.case_status[case_id] = CASE_INCONCLUSIVE
@@ -2647,6 +2605,8 @@ class Palinode(gl.Contract):
                 notice_digest,
                 notice_byte_length,
             )
+            if not self._validate_semantic_result(independent):
+                return False
             return _semantic_results_equal(proposed, independent)
 
         result = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
@@ -2961,6 +2921,8 @@ class Palinode(gl.Contract):
             "title": self.node_title[node_id],
             "subject_id": self.node_subject[node_id],
             "status": self.node_status[node_id],
+            "reliance_status": self.node_status[node_id],
+            "authentication_status": self.node_assessment_status[node_id],
             "assessment_status": self.node_assessment_status[node_id],
             "assessment_sequence": str(self.node_assessment_sequence[node_id]),
             "assessment_case_id": self.node_assessment_case[node_id],
@@ -2994,8 +2956,9 @@ class Palinode(gl.Contract):
         return {
             "case_id": case_id,
             "target_evidence_id": self.case_target_evidence[case_id],
-            "target_assessment_status": self.node_assessment_status[self.case_target_evidence[case_id]],
+            "target_authentication_status": self.node_assessment_status[self.case_target_evidence[case_id]],
             "target_reliance_status": self.node_status[self.case_target_evidence[case_id]],
+            "target_assessment_status": self.node_assessment_status[self.case_target_evidence[case_id]],
             "submitter": self.case_submitter[case_id],
             "opened_at": self.case_opened_at[case_id],
             "opened_sequence": str(self.case_opened_sequence[case_id]),
@@ -3043,6 +3006,7 @@ class Palinode(gl.Contract):
             "assessment_count": str(self.recovery_assessment_count[recovery_id]),
             "retry_count": str(self.recovery_retry_count[recovery_id]),
             "target_reliance_status": self.node_status[target_node_id],
+            "target_authentication_status": self.node_assessment_status[target_node_id],
             "target_assessment_status": self.node_assessment_status[target_node_id],
         }
 

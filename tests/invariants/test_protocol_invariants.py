@@ -138,7 +138,7 @@ def test_case_queue_is_scoped_and_cursor_is_monotonic(direct_vm, direct_deploy):
     direct_vm.mock_web(r"notice\.example/queue", {"status": 200, "body": notice})
     direct_vm.mock_llm(
         r"PALINODE semantic adjudicator",
-        '{"change_authentic":true,"same_subject":true,"original_evidence_affected":true,'
+        '{"result_status":"CONCLUSIVE","change_authentic":true,"same_subject":true,"original_evidence_affected":true,'
         '"materiality":"MATERIAL","root_effect":"INVALIDATE",'
         '"reason_code":"MATERIAL_CORRECTION"}',
     )

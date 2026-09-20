@@ -22,7 +22,7 @@ serves the exact committed bytes recorded in
 reported zero outer gas price and zero base fee at preflight, so the canary
 used the measured gasless RPC policy rather than inventing a funding budget.
 
-The one permitted deployment was finalized successfully:
+The archived Phase 2.5 deployment was finalized successfully:
 
 ```text
 contract: 0x712Dbb59F950D0D300d3E89Ed2Ac52db715383E4
@@ -34,10 +34,13 @@ The live deterministic lifecycle finalized through authority registration,
 evidence authentication, graph registration, challenge opening, successor
 authentication, and lineage linking. The real validator result for the
 revocation assessment was recorded as `RETRYABLE`/`INCONCLUSIVE` with
-`LLM_MALFORMED`; no impact or recovery was fabricated. A permissionless retry
-transaction was finalized and the recovery case remains correctly deferred
-until a material active cause exists. Full transaction IDs and readbacks are
-in `evidence/studionet/transactions.json` and `lifecycle.json`.
+`LLM_MALFORMED`; no impact or recovery was fabricated. Full archived
+transaction IDs and readbacks are in `evidence/studionet/canary-v1/`.
+
+Phase 2.6 deploys a corrected source only after all local gates pass. It must
+use `evidence/studionet/canary-v2/`, persist a new transaction ID before
+polling, and require final consensus plus successful execution. The old address
+is an archived canary and is never silently upgraded.
 
 No transaction is rebroadcast after a timeout, and no fake domain ownership or
 weakened authority rule is permitted.

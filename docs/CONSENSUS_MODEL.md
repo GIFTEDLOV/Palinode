@@ -53,8 +53,10 @@ reason_code: fixed enum
 ```
 
 Only after `run_nondet_unsafe` returns does deterministic code write the case
-result, assessment sequence/time, root status, and queue state. `process_impact`
-is entirely deterministic and can be called later in bounded steps.
+result, reliance status, active causes, and queue state. Evidence authentication
+fields are not touched by revocation review; they change only in the separate
+`authenticate_evidence` operation. `process_impact` is entirely deterministic
+and can be called later in bounded steps.
 
 Recovery uses the same leader/validator boundary with a smaller strict result:
 
@@ -82,8 +84,9 @@ schema. A source outage, timeout, HTTP error, invalid encoding, digest mismatch,
 malformed result, or LLM error becomes explicit retryable inconclusive state or
 consensus disagreement. It never silently becomes a semantic verdict.
 
-Evidence retrieval failure commits assessment `SOURCE_UNAVAILABLE`, not
-`CLEARED`, `REJECTED`, or semantic `INCONCLUSIVE`. The permissionless retry
+Evidence authentication retrieval failure commits authentication
+`SOURCE_UNAVAILABLE`, not `CLEARED` or `REJECTED`. Revocation retrieval failure
+remains a case-level retryable result and does not change authentication. The permissionless retry
 path can first consensus-verify cross-origin mirror bytes against the locked
 digest and length; only then can reassessment use the mirror location. A mirror
 has no authority semantics.

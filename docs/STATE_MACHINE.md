@@ -25,11 +25,12 @@ status, reason code, and case ID into a fixed 16-slot recent-history ring.
 does not lose its lifetime ability to transition merely because history is
 full.
 
-## Assessment status
+## Evidence authentication status
 
-Assessment status is a separate explicit state machine. It answers whether a
-registered object has received a bounded consensus assessment; it is not a
-shortcut for current downstream reliance.
+Authentication status is a separate explicit state machine. It answers only
+whether the authority-bound committed evidence identity is available with the
+registered exact bytes. It is not a semantic truth claim and is not a shortcut
+for current downstream reliance.
 
 | Current | Legal next statuses |
 |---|---|
@@ -40,15 +41,23 @@ shortcut for current downstream reliance.
 | `INCONCLUSIVE` | `PENDING`, `CLEARED`, `REJECTED`, `SOURCE_UNAVAILABLE` |
 | `SOURCE_UNAVAILABLE` | `PENDING`, `CLEARED`, `REJECTED`, `INCONCLUSIVE` |
 
-Registration creates `UNASSESSED`/`ACTIVE`. Opening an adverse case creates
-`PENDING` without changing reliance. A conclusive immaterial result creates
-`CLEARED`; a material result creates `REJECTED`; semantic ambiguity creates
-`INCONCLUSIVE`; retrieval infrastructure failure creates
-`SOURCE_UNAVAILABLE`. Assessment transitions use the same fixed 16-slot
-recent-history ring and a monotonic total count. Repeated retryable source
-failures update bounded case telemetry rather than appending unbounded
-assessment history. The node view exposes both current dimensions and the
-assessment case ID.
+Registration creates `UNASSESSED`/`ACTIVE`. Only `authenticate_evidence` moves
+the authentication state through this table. Opening or assessing a
+revocation case does not create an authentication transition. Revocation case
+status and result fields represent review progress; reliance status represents
+downstream impact. Authentication history uses a fixed 16-slot recent-history
+ring and a monotonic total count. The node view exposes
+`authentication_status`, the compatibility alias `assessment_status`, and
+`reliance_status` explicitly.
+
+## Revocation review state
+
+Revocation review is case-scoped, not an evidence authentication state. The
+case's `case_status`, `result_status`, `materiality`, and `root_effect` fields
+are the review state. A case can be `INCONCLUSIVE` or `COMPLETE` while the
+target evidence remains `CLEARED` for authentication. This prevents later
+epistemic impact from rewriting the historical fact that the committed source
+bytes were once authenticated.
 
 ## Revocation case status
 

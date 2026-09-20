@@ -28,7 +28,8 @@ ROOT = Path(__file__).resolve().parents[1]
 RPC_URL = "https://studio.genlayer.com/api"
 CHAIN_ID = 61999
 CONTRACT_PATH = ROOT / "contracts" / "palinode.py"
-EVIDENCE_DIR = ROOT / "evidence" / "studionet"
+# Phase 2.6 evidence is kept separate from the archived Phase 2.5 canary.
+EVIDENCE_DIR = ROOT / "evidence" / "studionet" / "canary-v2"
 TRANSACTIONS_PATH = EVIDENCE_DIR / "transactions.json"
 DEPLOYMENT_PATH = EVIDENCE_DIR / "deployment.json"
 LIFECYCLE_PATH = EVIDENCE_DIR / "lifecycle.json"
@@ -57,6 +58,11 @@ ARTIFACTS = {
         "uri": FIXTURE_URL + "/notices/vendor-audit-v1-revoked.json",
         "sha256": "0a735d8344897f0406bf84f2bd62b9bae55898d0e45ca670a001597a6a53492f",
         "byte_length": 278,
+    },
+    "correction": {
+        "uri": FIXTURE_URL + "/notices/vendor-audit-v1-correction.json",
+        "sha256": "43110fe3ce4dc9d5b2158c0892758559c21903ef9e50731b8b6cabdb8aca6212",
+        "byte_length": 326,
     },
 }
 
@@ -366,6 +372,15 @@ def run_canary() -> None:
     _STATE["balance_wei_before"] = str(client.get_balance(account.address))
     _STATE["source_sha256"] = source_sha256()
     _STATE["well_known"] = well_known_check()
+    write_json(
+        EVIDENCE_DIR / "fixture.json",
+        {
+            "deployment_url": FIXTURE_URL,
+            "well_known_url": FIXTURE_URL + "/.well-known/palinode.json",
+            "well_known": _STATE["well_known"],
+            "artifacts": ARTIFACTS,
+        },
+    )
     save_state(_STATE)
     deployment(client, account)
     _CONTRACT_ADDRESS = _STATE["contract_address"]
@@ -377,6 +392,8 @@ def run_canary() -> None:
     evidence_v1 = find_node_id(client, account, "EVIDENCE", "Fictional audit V1", ARTIFACTS["v1"]["uri"])
     auth_tx = submit_write(client, account, "authenticate_evidence_v1", "authenticate_evidence", [evidence_v1])
     v1_record = read_contract(client, account, "get_node_record", [evidence_v1])
+    if v1_record.get("authentication_status") != "CLEARED":
+        raise RuntimeError("live evidence V1 authentication did not become CLEARED")
     claim_tx = submit_write(client, account, "register_claim", "register_claim", ["fixture-vendor-001", "Claim depending on fictional audit V1"])
     claim_id = find_node_id(client, account, "CLAIM", "Claim depending on fictional audit V1")
     decision_tx = submit_write(client, account, "register_decision", "register_decision", ["fixture-vendor-001", "Decision depending on the claim"])
@@ -390,8 +407,12 @@ def run_canary() -> None:
     case_tx = submit_write(client, account, "open_revocation", "open_revocation_case", [evidence_v1, authority_id, ARTIFACTS["revocation"]["uri"], ARTIFACTS["revocation"]["sha256"], ARTIFACTS["revocation"]["byte_length"], "WITHDRAWN", "Controlled fictional fixture revocation"])
     case_id = find_case_id(client, account, evidence_v1, ARTIFACTS["revocation"]["uri"])
     case_before = read_contract(client, account, "get_revocation_case", [case_id])
+    if case_before.get("target_authentication_status") != "CLEARED":
+        raise RuntimeError("opening revocation changed evidence authentication status")
     assess_tx = submit_write(client, account, "assess_revocation", "assess_revocation", [case_id])
     case_after_assessment = read_contract(client, account, "get_revocation_case", [case_id])
+    if case_after_assessment.get("target_authentication_status") != "CLEARED":
+        raise RuntimeError("revocation assessment changed evidence authentication status")
     restart_process = subprocess.run(
         [sys.executable, str(Path(__file__)), "--resume-only", str(assess_tx["tx_id"])],
         cwd=ROOT,
@@ -420,6 +441,8 @@ def run_canary() -> None:
     if not material:
         retry_tx = submit_write(client, account, "retry_revocation", "retry_revocation_case", [case_id, "", ""])
         case_after_retry = read_contract(client, account, "get_revocation_case", [case_id])
+        if case_after_retry.get("target_authentication_status") != "CLEARED":
+            raise RuntimeError("revocation retry changed evidence authentication status")
     else:
         case_after_retry = None
 
@@ -430,6 +453,7 @@ def run_canary() -> None:
     successor_tx = submit_write(client, account, "link_successor", "link_evidence_successor", [evidence_v1, evidence_v2])
     recovery = None
     recovery_case_id = None
+    post_recovery_root = None
     if material and root_effect in {"INVALIDATE", "QUESTION"}:
         recovery_tx = submit_write(client, account, "open_recovery", "open_recovery_case", [evidence_v1, evidence_v2, case_id, "Controlled fictional corrected successor review"])
         recovery_case_id = newest_id(client, account, "get_recovery_ids_page")
@@ -444,6 +468,9 @@ def run_canary() -> None:
             else:
                 raise RuntimeError("recovery propagation did not complete within bounded calls")
         recovery["final_queue"] = read_contract(client, account, "get_recovery_queue_state", [recovery_case_id])
+        post_recovery_root = read_contract(client, account, "get_node_record", [evidence_v1])
+        if post_recovery_root.get("authentication_status") != "CLEARED":
+            raise RuntimeError("recovery changed evidence authentication status")
 
     lifecycle = {
         "network": "studionet",
@@ -455,7 +482,7 @@ def run_canary() -> None:
         "evidence_v2": {"id": evidence_v2, "record": v2_record, "authentication_tx": auth_v2_tx["tx_id"]},
         "graph": {"claim_id": claim_id, "decision_id": decision_id, "edges": edges},
         "revocation": {"case_id": case_id, "case_before": case_before, "case_after_assessment": case_after_assessment, "case_final": case_final, "case_after_retry": case_after_retry, "propagation": propagation, "root": root_state, "claim": claim_state, "decision": decision_state},
-        "recovery": {"case_id": recovery_case_id, "case": recovery},
+        "recovery": {"case_id": recovery_case_id, "case": recovery, "post_recovery_root": post_recovery_root},
         "historical_lineage_verified": bool(
             root_state.get("historical_validity")
             and v2_record.get("node_id") == evidence_v2

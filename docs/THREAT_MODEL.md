@@ -73,7 +73,9 @@ number of edges below the hard maximum and advances a monotonic cursor.
 
 JSON is required and parsed strictly. Extra or missing keys, invalid booleans,
 unsupported enum values, inconsistent materiality/root combinations, and
-unsupported reason codes return `LLM_MALFORMED` retryable inconclusive state.
+unsupported reason codes are rejected at the leader/validator boundary. They
+cannot be converted into an accepted `LLM_MALFORMED` semantic result. Explicit
+retryable state is reserved for validated source or LLM infrastructure failure.
 
 ## Validator disagreement
 
@@ -87,9 +89,10 @@ Non-2xx responses, timeouts, missing mocks, oversized bodies, invalid UTF-8,
 and submitted-notice digest/length mismatches are explicit infrastructure
 reasons. They cannot become `MATERIAL` or `IMMATERIAL`.
 
-Committed evidence outage becomes the explicit node assessment state
-`SOURCE_UNAVAILABLE`, distinct from semantic `INCONCLUSIVE`. Any caller may
-retry. A cross-origin retrieval mirror must pass independent consensus
+Committed evidence authentication outage becomes the explicit node
+authentication state `SOURCE_UNAVAILABLE`, distinct from semantic
+`INCONCLUSIVE`. A revocation source outage is case-level retryable state and
+does not rewrite authentication. Any caller may retry. A cross-origin retrieval mirror must pass independent consensus
 retrieval and exact byte-length/SHA-256 verification before it becomes a
 retrieval location; it never gains source-authority semantics. The original
 identity is never changed. A failed mirror leaves the locked case untouched,

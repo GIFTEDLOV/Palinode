@@ -17,16 +17,18 @@ itself retrieve and contextualize mutable, unstructured evidence. An ordinary
 backend can perform that semantic work, but its answer is controlled by one
 operator and is not an adversarially shared GenLayer consensus outcome.
 
-## Phase 2.5 status
+## Phase 2.6 status
 
 This phase contains one canonical Intelligent Contract at
 [contracts/palinode.py](contracts/palinode.py). There is no frontend, indexer,
 ERC20 integration, cross-contract messaging, or GitHub repository in this
 phase. The local security closure, cause-aware recovery lifecycle, bounded
 pagination, adversarial tests, mutation harness, integration harness, and one
-controlled Studionet canary are implemented. The live revocation assessment
-returned a recorded `RETRYABLE`/`INCONCLUSIVE` result, so live impact and
-recovery remain correctly unclaimed until a later explicit reassessment.
+  controlled Studionet canary are implemented. The archived canary returned a
+  recorded `RETRYABLE`/`INCONCLUSIVE` result with `LLM_MALFORMED`; the trace
+  analysis and corrected structured-output path are recorded separately. The
+  archived address is not upgraded in place. A new canary is gated on all local
+  security checks and one fresh live lifecycle.
 
 The target is stable Studionet:
 
@@ -56,10 +58,11 @@ check only a strict structured result:
 ```
 
 The validator independently repeats the bounded retrieval and semantic task,
-then requires exact agreement on all bounded fields. Malformed output,
-retrieval failure, digest mismatch, encoding failure, and LLM failure become an
-explicit `RETRYABLE`/`INCONCLUSIVE` result or a consensus disagreement; none
-becomes a successful material or immaterial verdict.
+then requires exact agreement on all bounded fields. Malformed output is
+rejected at the nondeterministic boundary; retrieval failure, digest mismatch,
+encoding failure, and LLM failure become an explicit retryable path or a
+consensus disagreement. None becomes a successful material or immaterial
+verdict.
 
 ## What deterministic code decides
 
@@ -77,15 +80,16 @@ After an agreed result, the contract alone:
 
 The contract never stores fetched document bodies. It stores source URI,
 content digest, exact byte length, subject, title, creator, transaction time,
-immutable creation sequence, current reliance status, separate assessment
+immutable creation sequence, current reliance status, separate authentication
 status, authority binding, and historical validity metadata.
 
-Registration is not assessment. Every newly registered node starts
-`assessment_status=UNASSESSED` and `status=ACTIVE`; those are intentionally
-independent dimensions. Assessment states are `UNASSESSED`, `PENDING`,
+Registration is not authentication. Every newly registered node starts
+`authentication_status=UNASSESSED` and `reliance_status=ACTIVE`; those are
+intentionally independent dimensions. Authentication states are `UNASSESSED`, `PENDING`,
 `CLEARED`, `REJECTED`, `INCONCLUSIVE`, and `SOURCE_UNAVAILABLE`. Contract
-views expose both fields directly, so a UI never has to infer consensus
-clearance from current reliance.
+views expose `authentication_status`, the compatibility alias
+`assessment_status`, and `reliance_status` directly. Revocation review is
+case-scoped and never rewrites authentication.
 
 ## Lifecycle
 
@@ -103,8 +107,10 @@ clearance from current reliance.
    suppress or erase cases.
 5. `assess_revocation(case_id)` assesses only the immutable case identity;
    callers cannot substitute another evidence or notice URL.
-6. If retrieval is unavailable, the node becomes `SOURCE_UNAVAILABLE`, not
-   semantically cleared or rejected. Any caller may use
+6. If evidence authentication retrieval is unavailable, the node becomes
+   `SOURCE_UNAVAILABLE`, not cleared or rejected. If revocation retrieval is
+   unavailable, the case becomes retryable/inconclusive while authentication
+   remains unchanged. Any caller may use
    `retry_revocation_case(case_id, evidence_mirror_id, notice_mirror_id)`;
    permissionless mirrors may come from independent HTTPS origins, but are
    accepted only after consensus-checked digest and byte-length equality. A

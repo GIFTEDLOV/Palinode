@@ -82,6 +82,7 @@ def mock_semantic_sources(direct_vm, notice_body, result):
 
 def material_result(root_effect="INVALIDATE"):
     return {
+        "result_status": "CONCLUSIVE",
         "change_authentic": True,
         "same_subject": True,
         "original_evidence_affected": True,
@@ -93,6 +94,7 @@ def material_result(root_effect="INVALIDATE"):
 
 def immaterial_result():
     return {
+        "result_status": "CONCLUSIVE",
         "change_authentic": False,
         "same_subject": True,
         "original_evidence_affected": False,
@@ -104,6 +106,7 @@ def immaterial_result():
 
 def inconclusive_result():
     return {
+        "result_status": "CONCLUSIVE",
         "change_authentic": True,
         "same_subject": True,
         "original_evidence_affected": True,
@@ -154,6 +157,9 @@ def test_material_semantic_result_invalidates_root_and_completes_without_descend
     evidence_id, case_id, notice_body = open_case(
         contract, direct_vm, evidence_authority, notice_authority
     )
+    direct_vm.mock_web(re.escape(EVIDENCE_URI), {"status": 200, "body": EVIDENCE_BODY})
+    contract.authenticate_evidence(evidence_id)
+    direct_vm.clear_mocks()
     mock_semantic_sources(direct_vm, notice_body, material_result())
     contract.assess_revocation(case_id)
     result = contract.get_revocation_case(case_id)
@@ -162,8 +168,31 @@ def test_material_semantic_result_invalidates_root_and_completes_without_descend
     assert result["root_effect"] == "INVALIDATE"
     assert result["case_status"] == "COMPLETE"
     assert contract.get_node_record(evidence_id)["status"] == "INVALIDATED"
-    assert contract.get_node_record(evidence_id)["assessment_status"] == "REJECTED"
+    assert contract.get_node_record(evidence_id)["authentication_status"] == "CLEARED"
     assert contract.process_impact(case_id, 1) == 0
+
+
+def test_live_seven_field_structured_result_shape_is_accepted(direct_vm, direct_deploy):
+    contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
+    evidence_authority = register_authority(contract, direct_vm, EVIDENCE_ORIGIN, "live-shape-e")
+    notice_authority = register_authority(contract, direct_vm, NOTICE_ORIGIN, "live-shape-n")
+    evidence_id, case_id, notice_body = open_case(
+        contract, direct_vm, evidence_authority, notice_authority
+    )
+    live_shape = {
+        "result_status": "CONCLUSIVE",
+        "change_authentic": True,
+        "same_subject": True,
+        "original_evidence_affected": True,
+        "materiality": "MATERIAL",
+        "root_effect": "INVALIDATE",
+        "reason_code": "MATERIAL_CORRECTION",
+    }
+    mock_semantic_sources(direct_vm, notice_body, live_shape)
+    contract.assess_revocation(case_id)
+    assert contract.get_revocation_case(case_id)["result_status"] == "CONCLUSIVE"
+    assert contract.get_node_record(evidence_id)["status"] == "INVALIDATED"
+    assert contract.get_node_record(evidence_id)["authentication_status"] == "UNASSESSED"
 
 
 def test_question_root_and_typed_propagation_are_bounded_and_resumable(direct_vm, direct_deploy):
@@ -184,7 +213,7 @@ def test_question_root_and_typed_propagation_are_bounded_and_resumable(direct_vm
     contract.assess_revocation(case_id)
     assert contract.get_revocation_case(case_id)["case_status"] == "PROPAGATING"
     assert contract.get_node_record(evidence_id)["status"] == "QUESTIONED"
-    assert contract.get_node_record(evidence_id)["assessment_status"] == "REJECTED"
+    assert contract.get_node_record(evidence_id)["assessment_status"] == "UNASSESSED"
     assert contract.process_impact(case_id, 1) == 1
     assert contract.get_node_record(requires_child)["status"] == "UNDER_REVIEW"
     state = contract.get_impact_queue_state(case_id)
@@ -213,7 +242,7 @@ def test_immaterial_never_propagates_and_inconclusive_is_retryable(direct_vm, di
     contract.assess_revocation(case_id)
     assert contract.get_revocation_case(case_id)["case_status"] == "COMPLETE"
     assert contract.get_node_record(evidence_id)["status"] == "ACTIVE"
-    assert contract.get_node_record(evidence_id)["assessment_status"] == "CLEARED"
+    assert contract.get_node_record(evidence_id)["assessment_status"] == "UNASSESSED"
     assert contract.get_node_record(child)["status"] == "ACTIVE"
 
     evidence_id_2, inconclusive_case, inconclusive_notice = open_case(
@@ -233,7 +262,7 @@ def test_immaterial_never_propagates_and_inconclusive_is_retryable(direct_vm, di
     assert inconclusive["result_status"] == "CONCLUSIVE"
     assert inconclusive["root_effect"] == "INCONCLUSIVE"
     assert contract.get_node_record(evidence_id_2)["status"] == "ACTIVE"
-    assert contract.get_node_record(evidence_id_2)["assessment_status"] == "INCONCLUSIVE"
+    assert contract.get_node_record(evidence_id_2)["assessment_status"] == "UNASSESSED"
 
 
 def test_malformed_llm_and_source_outage_fail_closed(direct_vm, direct_deploy):
@@ -246,13 +275,13 @@ def test_malformed_llm_and_source_outage_fail_closed(direct_vm, direct_deploy):
     direct_vm.mock_web(re.escape(EVIDENCE_URI), {"status": 200, "body": EVIDENCE_BODY})
     direct_vm.mock_web(re.escape(NOTICE_URI), {"status": 200, "body": notice_body})
     direct_vm.mock_llm(r"PALINODE semantic adjudicator", '{"unexpected": "shape"}')
-    contract.assess_revocation(case_id)
+    with direct_vm.expect_revert("semantic result rejected"):
+        contract.assess_revocation(case_id)
     malformed = contract.get_revocation_case(case_id)
-    assert malformed["case_status"] == "INCONCLUSIVE"
-    assert malformed["result_status"] == "RETRYABLE"
-    assert malformed["reason_code"] == "LLM_MALFORMED"
+    assert malformed["case_status"] == "OPEN"
+    assert malformed["result_status"] == "PENDING"
     assert contract.get_node_record(evidence_id)["status"] == "ACTIVE"
-    assert contract.get_node_record(evidence_id)["assessment_status"] == "INCONCLUSIVE"
+    assert contract.get_node_record(evidence_id)["assessment_status"] == "UNASSESSED"
 
     evidence_id_2, outage_case, outage_notice = open_case(
         contract,
@@ -271,7 +300,7 @@ def test_malformed_llm_and_source_outage_fail_closed(direct_vm, direct_deploy):
     assert outage["result_status"] == "RETRYABLE"
     assert outage["reason_code"] == "SOURCE_UNAVAILABLE"
     assert contract.get_node_record(evidence_id_2)["status"] == "ACTIVE"
-    assert contract.get_node_record(evidence_id_2)["assessment_status"] == "SOURCE_UNAVAILABLE"
+    assert contract.get_node_record(evidence_id_2)["assessment_status"] == "UNASSESSED"
 
 
 def test_validator_disagreement_is_visible_to_direct_harness(direct_vm, direct_deploy):

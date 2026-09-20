@@ -48,6 +48,7 @@ The LLM candidate is accepted only with exactly these fields:
 
 | Field | Allowed values |
 |---|---|
+| `result_status` | `CONCLUSIVE`, `RETRYABLE` |
 | `change_authentic` | boolean |
 | `same_subject` | boolean |
 | `original_evidence_affected` | boolean |
@@ -55,8 +56,7 @@ The LLM candidate is accepted only with exactly these fields:
 | `root_effect` | `INVALIDATE`, `QUESTION`, `NO_CHANGE`, `INCONCLUSIVE` |
 | `reason_code` | fixed semantic or infrastructure code set |
 
-The contract adds `result_status`: `CONCLUSIVE` or `RETRYABLE`. No raw LLM
-prose is stored. `MATERIAL` requires all three boolean predicates to be true,
+No raw LLM prose is stored. `MATERIAL` requires all three boolean predicates to be true,
 a `MATERIAL_*` reason, and an `INVALIDATE` or `QUESTION` root effect.
 `IMMATERIAL` requires `NO_CHANGE`. Semantic ambiguity is an explicit
 `INCONCLUSIVE` result.
@@ -64,15 +64,18 @@ a `MATERIAL_*` reason, and an `INVALIDATE` or `QUESTION` root effect.
 ## Failure behavior
 
 HTTPS failure, non-2xx response, oversized or invalid UTF-8 body, notice digest
-or length mismatch, malformed JSON, or LLM failure becomes a retryable
-`INCONCLUSIVE` case result. Validator disagreement rejects the nondeterministic
-block and does not commit a semantic mutation. No failure path becomes
-`MATERIAL` or `IMMATERIAL`.
+or length mismatch, or LLM call failure becomes a retryable `INCONCLUSIVE`
+case result. A malformed or schema-invalid leader result is not converted into
+an accepted `LLM_MALFORMED` verdict: the shared validator rejects it, allowing
+leader rotation or a failed transaction. Validator disagreement likewise
+rejects the nondeterministic block and does not commit a semantic mutation. No
+failure path becomes `MATERIAL` or `IMMATERIAL`.
 
 ## Liveness and mirror recovery
 
-`SOURCE_UNAVAILABLE` is a node assessment state distinct from semantic
-`INCONCLUSIVE`. A caller may retry an open or inconclusive case through
+Authentication `SOURCE_UNAVAILABLE` is a node authentication state distinct
+from a revocation case's retryable `INCONCLUSIVE`. A caller may retry an open
+or inconclusive case through
 `retry_revocation_case(case_id, evidence_mirror_id, notice_mirror_id)`.
 The original evidence and notice URI, authority, digest, and byte length are
 locked in the case. Permissionless mirror candidates may be cross-origin, but
@@ -96,9 +99,12 @@ registry uses a consensus-checked canonical
 `https://origin/.well-known/palinode.json` document binding the registering
 address, origin, policy, and nonce. A case locks the notice authority version
 and all content identity fields; reassessment accepts only `case_id`. Callers do not select validators or
-semantic decision-makers. GenLayer's assigned leader and validator committee
-remain authoritative for the semantic result; application owners have no
-suppression or override path.
+  semantic decision-makers. GenLayer's assigned leader and validator committee
+  remain authoritative for the semantic result; application owners have no
+  suppression or override path. The target's `authentication_status` is not
+  changed by opening, retrying, assessing, propagating, or recovering a
+  revocation case; only explicit `authenticate_evidence` operations can change
+  that dimension.
 
 ## Recovery cases
 

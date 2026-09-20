@@ -63,6 +63,7 @@ def semantic_sources(direct_vm, evidence_uri, notice_uri, notice_body, result):
 
 def material(root="INVALIDATE"):
     return {
+        "result_status": "CONCLUSIVE",
         "change_authentic": True,
         "same_subject": True,
         "original_evidence_affected": True,
@@ -74,6 +75,7 @@ def material(root="INVALIDATE"):
 
 def immaterial():
     return {
+        "result_status": "CONCLUSIVE",
         "change_authentic": False,
         "same_subject": True,
         "original_evidence_affected": False,
@@ -247,6 +249,21 @@ def test_immaterial_case_cannot_change_root_effect_even_if_internal_commit_is_ma
     unsupported["materiality"] = "UNSUPPORTED"
     with direct_vm.expect_revert("unsupported materiality"):
         contract._commit_semantic_result(case_id, unsupported)
+
+
+def test_semantic_schema_rejects_markdown_missing_fields_wrong_types_and_enums(direct_vm, direct_deploy):
+    contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
+    valid = material()
+    invalid_candidates = [
+        "```json\n" + json.dumps(valid) + "\n```",
+        {key: value for key, value in valid.items() if key != "reason_code"},
+        dict(valid, materiality="material"),
+        dict(valid, change_authentic="true"),
+        dict(valid, root_effect=None),
+        dict(valid, unsupported="extra"),
+    ]
+    for candidate in invalid_candidates:
+        assert contract._validate_semantic_result(candidate) is False
 
 
 @pytest.mark.parametrize(

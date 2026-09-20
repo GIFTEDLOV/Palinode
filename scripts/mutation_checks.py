@@ -208,6 +208,30 @@ MUTATIONS = (
         "if False:",
         "tests/adversarial/test_capacity_and_recovery.py::test_65th_stronger_cause_is_retained_as_monotonic_overflow_safety_lock",
     ),
+    Mutation(
+        "revocation_open_does_not_authenticate",
+        "# Opening a review case must not mutate authentication. The committed",
+        "self._transition_assessment(target_evidence_id, ASSESS_PENDING, case_id)\n        # Opening a review case must not mutate authentication. The committed",
+        "tests/direct/test_steward_hardening.py::test_registration_is_unassessed_and_cleared_is_distinct",
+    ),
+    Mutation(
+        "revocation_retry_does_not_reauthenticate",
+        "# The retry changes retrieval pointers and case telemetry only.",
+        "self._transition_assessment(target, ASSESS_PENDING, case_id)\n        # The retry changes retrieval pointers and case telemetry only.",
+        "tests/direct/test_steward_hardening.py::test_source_unavailable_has_permissionless_mirror_recovery_without_identity_rewrite",
+    ),
+    Mutation(
+        "revocation_commit_does_not_authenticate",
+        "# Revocation review mutates the case and reliance causes, never authentication.",
+        "self._transition_assessment(target, ASSESS_REJECTED, case_id)\n        # Revocation review mutates the case and reliance causes, never authentication.",
+        "tests/direct/test_revocation_and_propagation.py::test_material_semantic_result_invalidates_root_and_completes_without_descendants",
+    ),
+    Mutation(
+        "malformed_leader_rejection",
+        "if _valid_semantic_result_shape(candidate):\n        return candidate",
+        "if True:\n        return _retryable_result(\"LLM_MALFORMED\")",
+        "tests/direct/test_revocation_and_propagation.py::test_live_seven_field_structured_result_shape_is_accepted",
+    ),
 )
 
 

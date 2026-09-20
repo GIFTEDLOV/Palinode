@@ -1,0 +1,47 @@
+{
+  "fixture_deployment_url": "https://palinode-fixture.vercel.app",
+  "well_known_url": "https://palinode-fixture.vercel.app/.well-known/palinode.json",
+  "fictional_data_only": true,
+  "artifacts": [
+    {
+      "path": "/.well-known/palinode.json",
+      "url": "https://palinode-fixture.vercel.app/.well-known/palinode.json",
+      "sha256": "037181c4cfad5a5eed35d09036d9c5acfa605b185eeb0f73cbd4b067581bd635",
+      "byte_length": 227,
+      "remote_status": 200,
+      "remote_exact": true
+    },
+    {
+      "path": "/evidence/vendor-audit-v1.json",
+      "url": "https://palinode-fixture.vercel.app/evidence/vendor-audit-v1.json",
+      "sha256": "29084e2b0430225ef85d81da3422c0b4a7bdfdf0357845eaec7e1ac0df45e5c2",
+      "byte_length": 241,
+      "remote_status": 200,
+      "remote_exact": true
+    },
+    {
+      "path": "/evidence/vendor-audit-v2.json",
+      "url": "https://palinode-fixture.vercel.app/evidence/vendor-audit-v2.json",
+      "sha256": "c005ac1d5de56b14cb95fbacf6ecddc81386846a3df5bd5a3e28f0498b509ab3",
+      "byte_length": 328,
+      "remote_status": 200,
+      "remote_exact": true
+    },
+    {
+      "path": "/notices/vendor-audit-v1-revoked.json",
+      "url": "https://palinode-fixture.vercel.app/notices/vendor-audit-v1-revoked.json",
+      "sha256": "0a735d8344897f0406bf84f2bd62b9bae55898d0e45ca670a001597a6a53492f",
+      "byte_length": 278,
+      "remote_status": 200,
+      "remote_exact": true
+    },
+    {
+      "path": "/notices/vendor-audit-v1-correction.json",
+      "url": "https://palinode-fixture.vercel.app/notices/vendor-audit-v1-correction.json",
+      "sha256": "43110fe3ce4dc9d5b2158c0892758559c21903ef9e50731b8b6cabdb8aca6212",
+      "byte_length": 326,
+      "remote_status": 200,
+      "remote_exact": true
+    }
+  ]
+}
