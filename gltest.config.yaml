@@ -1,0 +1,13 @@
+networks:
+  default: studionet
+
+  studionet: {}
+    # Built-in stable Studionet profile.
+    # Canonical RPC: https://studio.genlayer.com/api
+    # Chain ID: 61999
+
+paths:
+  contracts: "contracts"
+  artifacts: "artifacts"
+
+environment: .env

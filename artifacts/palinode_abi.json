@@ -1,0 +1,308 @@
+{
+  "ctor": {
+    "params": [],
+    "kwparams": {}
+  },
+  "methods": {
+    "assess_revocation": {
+      "params": [
+        [
+          "case_id",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    },
+    "get_case_ids": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": [
+        {
+          "$rep": "string"
+        }
+      ]
+    },
+    "get_dependency_record": {
+      "params": [
+        [
+          "edge_id",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": {
+        "$dict": "string"
+      }
+    },
+    "get_edge_ids": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": [
+        {
+          "$rep": "string"
+        }
+      ]
+    },
+    "get_impact_queue_state": {
+      "params": [
+        [
+          "case_id",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": {
+        "$dict": "string"
+      }
+    },
+    "get_node_ids": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": [
+        {
+          "$rep": "string"
+        }
+      ]
+    },
+    "get_node_record": {
+      "params": [
+        [
+          "node_id",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": {
+        "$dict": "string"
+      }
+    },
+    "get_revocation_case": {
+      "params": [
+        [
+          "case_id",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": {
+        "$dict": "string"
+      }
+    },
+    "get_status_history": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": [
+        {
+          "$rep": "string"
+        }
+      ]
+    },
+    "link_evidence_successor": {
+      "params": [
+        [
+          "old_evidence_id",
+          "string"
+        ],
+        [
+          "successor_evidence_id",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    },
+    "open_revocation_case": {
+      "params": [
+        [
+          "target_evidence_id",
+          "string"
+        ],
+        [
+          "notice_uri",
+          "string"
+        ],
+        [
+          "notice_sha256",
+          "string"
+        ],
+        [
+          "notice_byte_length",
+          "int"
+        ],
+        [
+          "opening_reason_code",
+          "string"
+        ],
+        [
+          "opening_note",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "string",
+      "payable": false
+    },
+    "process_impact": {
+      "params": [
+        [
+          "case_id",
+          "string"
+        ],
+        [
+          "max_steps",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "int",
+      "payable": false
+    },
+    "register_attestation": {
+      "params": [
+        [
+          "subject_id",
+          "string"
+        ],
+        [
+          "title",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "string",
+      "payable": false
+    },
+    "register_authorization": {
+      "params": [
+        [
+          "subject_id",
+          "string"
+        ],
+        [
+          "title",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "string",
+      "payable": false
+    },
+    "register_claim": {
+      "params": [
+        [
+          "subject_id",
+          "string"
+        ],
+        [
+          "title",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "string",
+      "payable": false
+    },
+    "register_decision": {
+      "params": [
+        [
+          "subject_id",
+          "string"
+        ],
+        [
+          "title",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "string",
+      "payable": false
+    },
+    "register_dependency": {
+      "params": [
+        [
+          "parent_node_id",
+          "string"
+        ],
+        [
+          "child_node_id",
+          "string"
+        ],
+        [
+          "relationship",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "string",
+      "payable": false
+    },
+    "register_evidence": {
+      "params": [
+        [
+          "source_uri",
+          "string"
+        ],
+        [
+          "content_sha256",
+          "string"
+        ],
+        [
+          "byte_length",
+          "int"
+        ],
+        [
+          "subject_id",
+          "string"
+        ],
+        [
+          "title",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "string",
+      "payable": false
+    },
+    "register_node": {
+      "params": [
+        [
+          "node_type",
+          "string"
+        ],
+        [
+          "subject_id",
+          "string"
+        ],
+        [
+          "title",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "string",
+      "payable": false
+    }
+  }
+}

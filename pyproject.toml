@@ -1,0 +1,6 @@
+[tool.pytest.ini_options]
+testpaths = ["tests/direct", "tests/invariants"]
+markers = [
+  "direct: in-memory GenLayer contract execution",
+  "invariant: protocol invariant and property-oriented coverage",
+]
