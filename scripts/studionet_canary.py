@@ -28,8 +28,8 @@ ROOT = Path(__file__).resolve().parents[1]
 RPC_URL = "https://studio.genlayer.com/api"
 CHAIN_ID = 61999
 CONTRACT_PATH = ROOT / "contracts" / "palinode.py"
-# Phase 2.6 evidence is kept separate from the archived Phase 2.5 canary.
-EVIDENCE_DIR = ROOT / "evidence" / "studionet" / "canary-v2"
+# Phase 2.7 evidence is kept separate from archived canary-v1 and canary-v2.
+EVIDENCE_DIR = ROOT / "evidence" / "studionet" / "canary-v3"
 TRANSACTIONS_PATH = EVIDENCE_DIR / "transactions.json"
 DEPLOYMENT_PATH = EVIDENCE_DIR / "deployment.json"
 LIFECYCLE_PATH = EVIDENCE_DIR / "lifecycle.json"
@@ -437,24 +437,26 @@ def run_canary() -> None:
     root_state = read_contract(client, account, "get_node_record", [evidence_v1])
     claim_state = read_contract(client, account, "get_node_record", [claim_id])
     decision_state = read_contract(client, account, "get_node_record", [decision_id])
+    # Phase 2.7 intentionally submits exactly one semantic revocation
+    # assessment. A legitimate IMMATERIAL or INCONCLUSIVE result is recorded
+    # as-is; it must not trigger an automatic retry merely to force MATERIAL.
     retry_tx = None
-    if not material:
-        retry_tx = submit_write(client, account, "retry_revocation", "retry_revocation_case", [case_id, "", ""])
-        case_after_retry = read_contract(client, account, "get_revocation_case", [case_id])
-        if case_after_retry.get("target_authentication_status") != "CLEARED":
-            raise RuntimeError("revocation retry changed evidence authentication status")
-    else:
-        case_after_retry = None
+    case_after_retry = None
 
-    evidence_v2_tx = submit_write(client, account, "register_evidence_v2", "register_evidence", [ARTIFACTS["v2"]["uri"], ARTIFACTS["v2"]["sha256"], ARTIFACTS["v2"]["byte_length"], "fixture-vendor-001", "Fictional audit V2 corrected", authority_id])
-    evidence_v2 = find_node_id(client, account, "EVIDENCE", "Fictional audit V2 corrected", ARTIFACTS["v2"]["uri"])
-    auth_v2_tx = submit_write(client, account, "authenticate_evidence_v2", "authenticate_evidence", [evidence_v2])
-    v2_record = read_contract(client, account, "get_node_record", [evidence_v2])
-    successor_tx = submit_write(client, account, "link_successor", "link_evidence_successor", [evidence_v1, evidence_v2])
+    evidence_v2_tx = None
+    evidence_v2 = None
+    auth_v2_tx = None
+    v2_record = None
+    successor_tx = None
     recovery = None
     recovery_case_id = None
     post_recovery_root = None
     if material and root_effect in {"INVALIDATE", "QUESTION"}:
+        evidence_v2_tx = submit_write(client, account, "register_evidence_v2", "register_evidence", [ARTIFACTS["v2"]["uri"], ARTIFACTS["v2"]["sha256"], ARTIFACTS["v2"]["byte_length"], "fixture-vendor-001", "Fictional audit V2 corrected", authority_id])
+        evidence_v2 = find_node_id(client, account, "EVIDENCE", "Fictional audit V2 corrected", ARTIFACTS["v2"]["uri"])
+        auth_v2_tx = submit_write(client, account, "authenticate_evidence_v2", "authenticate_evidence", [evidence_v2])
+        v2_record = read_contract(client, account, "get_node_record", [evidence_v2])
+        successor_tx = submit_write(client, account, "link_successor", "link_evidence_successor", [evidence_v1, evidence_v2])
         recovery_tx = submit_write(client, account, "open_recovery", "open_recovery_case", [evidence_v1, evidence_v2, case_id, "Controlled fictional corrected successor review"])
         recovery_case_id = newest_id(client, account, "get_recovery_ids_page")
         recovery_assess_tx = submit_write(client, account, "assess_recovery", "assess_recovery", [recovery_case_id])
@@ -479,12 +481,13 @@ def run_canary() -> None:
         "authority": authority,
         "authority_id": authority_id,
         "evidence_v1": {"id": evidence_v1, "record": v1_record, "authentication_tx": auth_tx["tx_id"]},
-        "evidence_v2": {"id": evidence_v2, "record": v2_record, "authentication_tx": auth_v2_tx["tx_id"]},
+        "evidence_v2": {"id": evidence_v2, "record": v2_record, "authentication_tx": auth_v2_tx["tx_id"] if auth_v2_tx else None},
         "graph": {"claim_id": claim_id, "decision_id": decision_id, "edges": edges},
         "revocation": {"case_id": case_id, "case_before": case_before, "case_after_assessment": case_after_assessment, "case_final": case_final, "case_after_retry": case_after_retry, "propagation": propagation, "root": root_state, "claim": claim_state, "decision": decision_state},
         "recovery": {"case_id": recovery_case_id, "case": recovery, "post_recovery_root": post_recovery_root},
         "historical_lineage_verified": bool(
             root_state.get("historical_validity")
+            and v2_record is not None
             and v2_record.get("node_id") == evidence_v2
             and existing_record("link_successor") is not None
         ),

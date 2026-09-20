@@ -1103,6 +1103,12 @@ MATERIAL_SUPERSESSION, MATERIAL_COMPROMISE, MATERIAL_INVALIDATION,
 MATERIAL_REVOCATION, IMMATERIAL_CORRECTION, NO_AUTHENTIC_CHANGE,
 DIFFERENT_SUBJECT, NOT_ORIGINAL_EVIDENCE, or SEMANTIC_INCONCLUSIVE).
 
+Output JSON only. Use exactly the keys and enum values specified above. Do not
+create combined labels, synonyms, renamed enum values, prefixes, or suffixes.
+Do not return labels such as MATERIAL_REVOCATION in the materiality field.
+Before returning, verify that every enum belongs exactly to the provided set.
+Return no prose, markdown, or extra keys.
+
 CONCLUSIVE is required for a semantic result. RETRYABLE is reserved for a
 source or LLM infrastructure failure and must use INCONCLUSIVE,
 INCONCLUSIVE, and the matching explicit failure reason. Never use RETRYABLE
