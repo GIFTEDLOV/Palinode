@@ -82,3 +82,11 @@ deployment and is not upgraded in place. The corrected Phase 2.6 canary-v2
 deployment finalized, but its single semantic attempt was safely
 `UNDETERMINED` because of an unlisted provider reason enum; it is not frozen as
 the final protocol deployment.
+
+The final canary-v3 deployment is the frozen candidate, not an in-place
+upgrade of either archived address. Its single live semantic assessment
+finalized as a canonical `CONCLUSIVE`/`MATERIAL`/`INVALIDATE` result, and the
+controlled recovery finalized after the matching cause was resolved. The V3
+deployment, lifecycle, and restart-tracking evidence are under
+`evidence/studionet/canary-v3/`; the freeze record is
+`docs/CONTRACT_FREEZE.md`.

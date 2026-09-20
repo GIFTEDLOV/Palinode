@@ -37,3 +37,10 @@ in place. Deterministic setup and authentication finalized on canary-v2. Its
 single semantic revocation attempt was `UNDETERMINED`/`MAJORITY_DISAGREE`
 because the provider emitted the unlisted `MATERIAL_REVOCATION` reason code.
 The full readback and trace are in `evidence/studionet/canary-v2/`.
+
+The final hosted canary-v3 then finalized the strict semantic path with
+`CONCLUSIVE`/`MATERIAL`/`INVALIDATE` and completed bounded revocation and
+successor-recovery queues. The revocation transaction was resumed by ID in a
+fresh tracker process with zero resubmissions. Its evidence is archived under
+`evidence/studionet/canary-v3/`; this hosted proof is distinct from the known
+local GLSim runtime skip.
