@@ -1,0 +1,13 @@
+{
+  "balance_wei_before": "0",
+  "chain_id": 61999,
+  "contract_address": "0xDD918F99553717f6e157A7Ca2FfE902B4E3a438B",
+  "contract_sha256": "9489056b03d2b53cf1ef5df1f356c35856c42c1b1ae139aa2abe581c404d4116",
+  "deployer_address": "0x7e68EAdc3bEDfF1E508D25cC7f1611D1455B4FC4",
+  "deployment_tx_id": "0x2f8845f6045832af01c3fbadfe1d2a5b5f1a3fc4cb200e600a5ad7605ec7b5c0",
+  "execution_result": "FINISHED_WITH_RETURN",
+  "network": "studionet",
+  "private_key_in_git": false,
+  "rpc_url": "https://studio.genlayer.com/api",
+  "status": "FINALIZED_SUCCESS"
+}

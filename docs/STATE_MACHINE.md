@@ -89,6 +89,10 @@ reliance state. A case that is `COMPLETE` or `PROPAGATING` cannot be
 reassessed. Exact duplicate challenge identities are rejected, while distinct
 notice identities remain independent and ordered by opening sequence.
 
+The semantic reason-code set is closed. The observed `MATERIAL_REVOCATION`
+token is now an explicit legal material code; any other unlisted token remains
+invalid and cannot produce a case transition.
+
 ## Recovery transition
 
 `link_evidence_successor(old, new)` stores explicit predecessor/successor

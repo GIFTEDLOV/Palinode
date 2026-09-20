@@ -49,7 +49,8 @@ same_subject: bool
 original_evidence_affected: bool
 materiality: MATERIAL | IMMATERIAL | INCONCLUSIVE
 root_effect: INVALIDATE | QUESTION | NO_CHANGE | INCONCLUSIVE
-reason_code: fixed enum
+reason_code: closed enum, including the explicitly listed material,
+             immaterial, inconclusive, and infrastructure codes
 ```
 
 Only after `run_nondet_unsafe` returns does deterministic code write the case
@@ -83,6 +84,11 @@ sections of a fixed authority-bearing task; it cannot extend the allowed result
 schema. A source outage, timeout, HTTP error, invalid encoding, digest mismatch,
 malformed result, or LLM error becomes explicit retryable inconclusive state or
 consensus disagreement. It never silently becomes a semantic verdict.
+
+The first corrected-canary semantic transaction demonstrated why the enum list
+must be explicit in both code and prompt: a parsed seven-field provider result
+using the unlisted `MATERIAL_REVOCATION` code was rejected by validators and
+produced `UNDETERMINED`. No canonical state mutation followed.
 
 Evidence authentication retrieval failure commits authentication
 `SOURCE_UNAVAILABLE`, not `CLEARED` or `REJECTED`. Revocation retrieval failure

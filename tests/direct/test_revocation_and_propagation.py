@@ -186,7 +186,8 @@ def test_live_seven_field_structured_result_shape_is_accepted(direct_vm, direct_
         "original_evidence_affected": True,
         "materiality": "MATERIAL",
         "root_effect": "INVALIDATE",
-        "reason_code": "MATERIAL_CORRECTION",
+        # Exact live Studionet response shape from the Phase 2.6 canary.
+        "reason_code": "MATERIAL_REVOCATION",
     }
     mock_semantic_sources(direct_vm, notice_body, live_shape)
     contract.assess_revocation(case_id)

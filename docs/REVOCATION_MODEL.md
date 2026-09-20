@@ -61,6 +61,11 @@ a `MATERIAL_*` reason, and an `INVALIDATE` or `QUESTION` root effect.
 `IMMATERIAL` requires `NO_CHANGE`. Semantic ambiguity is an explicit
 `INCONCLUSIVE` result.
 
+The material reason enum is closed, not fuzzy. It includes the explicit
+`MATERIAL_REVOCATION` token observed in the controlled canary in addition to
+the correction, withdrawal, supersession, compromise, and invalidation
+variants. An unknown token remains validator-rejected.
+
 ## Failure behavior
 
 HTTPS failure, non-2xx response, oversized or invalid UTF-8 body, notice digest

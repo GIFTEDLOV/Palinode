@@ -37,10 +37,14 @@ revocation assessment was recorded as `RETRYABLE`/`INCONCLUSIVE` with
 `LLM_MALFORMED`; no impact or recovery was fabricated. Full archived
 transaction IDs and readbacks are in `evidence/studionet/canary-v1/`.
 
-Phase 2.6 deploys a corrected source only after all local gates pass. It must
-use `evidence/studionet/canary-v2/`, persist a new transaction ID before
-polling, and require final consensus plus successful execution. The old address
-is an archived canary and is never silently upgraded.
+Phase 2.6 deployed the corrected source once after all local gates passed. It
+used `evidence/studionet/canary-v2/`, persisted a new transaction ID before
+polling, and required final consensus plus successful execution. The deployment
+finalized at `0xDD918F99553717f6e157A7Ca2FfE902B4E3a438B`, but the one permitted
+live semantic assessment later reached `UNDETERMINED` because the provider
+returned an unlisted bounded reason enum. The old address is an archived
+canary and is never silently upgraded. No second deployment or semantic retry
+was submitted.
 
 No transaction is rebroadcast after a timeout, and no fake domain ownership or
 weakened authority rule is permitted.

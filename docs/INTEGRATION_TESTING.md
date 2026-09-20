@@ -31,6 +31,9 @@ application transaction under `evidence/studionet/canary-v1/`. Deployment and
 deterministic graph/authority/evidence operations finalized successfully. Its
 revocation assessment reached real Studionet consensus as
 `RETRYABLE`/`INCONCLUSIVE` (`LLM_MALFORMED`); the trace analysis is in
-`docs/LIVE_SEMANTIC_FAILURE_ANALYSIS.md`. The corrected contract must use a
-fresh `canary-v2` directory and one new deployment; the old address is not
-upgraded in place.
+`docs/LIVE_SEMANTIC_FAILURE_ANALYSIS.md`. The corrected contract used a fresh
+`canary-v2` directory and one new deployment; the old address is not upgraded
+in place. Deterministic setup and authentication finalized on canary-v2. Its
+single semantic revocation attempt was `UNDETERMINED`/`MAJORITY_DISAGREE`
+because the provider emitted the unlisted `MATERIAL_REVOCATION` reason code.
+The full readback and trace are in `evidence/studionet/canary-v2/`.

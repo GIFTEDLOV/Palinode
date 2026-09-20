@@ -1,0 +1,45 @@
+{
+  "network": "studionet",
+  "rpc_url": "https://studio.genlayer.com/api",
+  "chain_id": 61999,
+  "contract_address": "0xDD918F99553717f6e157A7Ca2FfE902B4E3a438B",
+  "completed_before_semantic_boundary": true,
+  "authority": {
+    "authority_id": "f5d0db56d7bf3eb85e2b5ef02f15ec06170db45d1ada322982e8d382c664f4b3",
+    "status": "ACTIVE",
+    "current_version": "1",
+    "canonical_origin": "https://palinode-fixture.vercel.app",
+    "controller": "0x7e68EAdc3bEDfF1E508D25cC7f1611D1455B4FC4"
+  },
+  "evidence_v1": {
+    "id": "1592fbc79ab2eac54ff77a793e237e141277b4dffc589b9f7d84388cdd1e709c",
+    "authentication_status": "CLEARED",
+    "reliance_status": "ACTIVE",
+    "authority_version": "1",
+    "sha256": "29084e2b0430225ef85d81da3422c0b4a7bdfdf0357845eaec7e1ac0df45e5c2",
+    "byte_length": 241
+  },
+  "graph": {
+    "claim_id": "1445241cd0152e9abdc984443891a4d68f885cafa2f7da2d418d226d7bca4d96",
+    "decision_id": "24b2d5ce9941acaa9da149f4521bed8c4b97076a3e775be0e58b569d2ad6a669",
+    "relationships": ["SUPPORTS", "REQUIRES"]
+  },
+  "revocation": {
+    "case_id": "c33a6a26f342279d29676b59c6242959cf219c1a30449508ea5f45341209b699",
+    "case_status_after_open": "OPEN",
+    "authentication_status_after_open": "CLEARED",
+    "assess_transaction_id": "0xc0d05d17df0d27e9ffca02d5aaa03a42ccd99d9d6abc59d876cd002054478e2c",
+    "assess_final_status": "UNDETERMINED",
+    "assess_consensus_result": "MAJORITY_DISAGREE",
+    "case_status_after_assess_attempt": "OPEN",
+    "authentication_status_after_assess_attempt": "CLEARED",
+    "reliance_status_after_assess_attempt": "ACTIVE",
+    "impact_processed": false
+  },
+  "recovery": {
+    "attempted": false,
+    "reason": "No conclusive material adverse cause was established; the run stopped after the single permitted semantic transaction."
+  },
+  "historical_state_preserved": true,
+  "no_semantic_retry_submitted": true
+}

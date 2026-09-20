@@ -27,8 +27,11 @@ pagination, adversarial tests, mutation harness, integration harness, and one
   controlled Studionet canary are implemented. The archived canary returned a
   recorded `RETRYABLE`/`INCONCLUSIVE` result with `LLM_MALFORMED`; the trace
   analysis and corrected structured-output path are recorded separately. The
-  archived address is not upgraded in place. A new canary is gated on all local
-  security checks and one fresh live lifecycle.
+  archived address is not upgraded in place. Canary-v2 was deployed once after
+  all local gates and deterministic setup/authentication finalized, but its one
+  permitted semantic attempt was `UNDETERMINED` because the provider returned
+  the unlisted bounded token `MATERIAL_REVOCATION`. The trace and readbacks are
+  archived under `evidence/studionet/canary-v2/`; the contract is not frozen.
 
 The target is stable Studionet:
 
@@ -208,7 +211,9 @@ automatically resubmits them.
   and real validator agreement; local mocks cannot prove hosted behavior.
 - The direct harness uses the stable `v0.2.16` GenVM artifact. The repository
   does not claim that direct-mode compatibility alone proves Studionet
-  production behavior, and no Studionet transaction has been broadcast.
+  production behavior. The archived canary-v1 and canary-v2 evidence retain
+  the actual hosted transaction outcomes; canary-v2's live semantic closure
+  remains an explicit blocker.
 - No legal, regulatory, or factual truth guarantee is implied by a semantic
   verdict; PALINODE records a bounded adjudication of registered dependency
   impact.

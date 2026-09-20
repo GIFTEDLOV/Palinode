@@ -12,8 +12,10 @@ alias: studionet
 
 The repository does not target `studio-dev`, chain ID `61997`, or Bradbury.
 The checked-in `gltest.config.yaml` selects the built-in `studionet` profile.
-No contract deployment was broadcast because the resolved account was
-unfunded.
+One controlled canary deployment was broadcast only after the measured
+gasless Studionet preflight and local gates passed. It finalized successfully;
+the semantic-closure result is recorded separately under
+`evidence/studionet/canary-v2/`.
 
 ## Resolved versions
 

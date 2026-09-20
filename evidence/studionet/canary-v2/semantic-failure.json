@@ -1,0 +1,52 @@
+{
+  "transaction_id": "0xc0d05d17df0d27e9ffca02d5aaa03a42ccd99d9d6abc59d876cd002054478e2c",
+  "contract_address": "0xDD918F99553717f6e157A7Ca2FfE902B4E3a438B",
+  "status": "UNDETERMINED",
+  "consensus_result": "MAJORITY_DISAGREE",
+  "execution_result": null,
+  "case_id": "c33a6a26f342279d29676b59c6242959cf219c1a30449508ea5f45341209b699",
+  "votes": {
+    "0x36728d2a123aB444E603EE5b2ad17d18Bb193557": "disagree",
+    "0x5310dcF075E0BD47d29B8ec6581F736C767f54D2": "idle",
+    "0x90402341F0B0e97b23023c0a87de957FB7148E0F": "disagree",
+    "0xDB1c35c1f05d885999b8f13e5735307BcC16Be88": "disagree",
+    "0xec2Fb79cd12255Eb34886CEd7332f27B98DEe658": "idle"
+  },
+  "leader": {
+    "equivalence_output": {
+      "change_authentic": true,
+      "materiality": "MATERIAL",
+      "original_evidence_affected": true,
+      "reason_code": "MATERIAL_REVOCATION",
+      "result_status": "CONCLUSIVE",
+      "root_effect": "INVALIDATE",
+      "same_subject": true
+    },
+    "execution_result": "ERROR",
+    "rollback_payload": "semantic result rejected",
+    "stderr": "known pickling-storage warning only",
+    "nondeterministic_disagreement": null
+  },
+  "validators": {
+    "active_disagreements": 3,
+    "active_validator_error": "semantic result rejected",
+    "idle_reason": "CONSENSUS_VALIDATOR_QUORUM_REACHED"
+  },
+  "root_cause_classification": "E/I",
+  "root_cause": "The provider returned a parsed seven-field object, but MATERIAL_REVOCATION was not in the deployed contract's fixed SEMANTIC_REASON_CODES enum. The strict validator therefore rejected an otherwise well-shaped candidate; no fuzzy parsing or automatic retryable verdict was accepted.",
+  "false_classifications": {
+    "response_format_json_missing": false,
+    "json_loads_on_decoded_dict": false,
+    "required_field_missing": false,
+    "enum_casing_only": false,
+    "source_outage": false,
+    "validator_independently_accepted": false
+  },
+  "debug_trace": {
+    "documented_rpc": "gen_dbg_traceTransaction",
+    "result": "METHOD_NOT_FOUND",
+    "raw_provider_payload_available": false
+  },
+  "safety_outcome": "No case or graph mutation occurred. The target authentication_status remained CLEARED and reliance_status remained ACTIVE.",
+  "deployed_contract_sha256": "9489056b03d2b53cf1ef5df1f356c35856c42c1b1ae139aa2abe581c404d4116"
+}

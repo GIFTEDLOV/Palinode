@@ -78,5 +78,7 @@ final. `ACCEPTED` is tracked separately from execution success and finalization.
 The application layer must persist the transaction ID and resume polling it
 after timeouts rather than resubmitting automatically. The archived Phase 2.5
 canary is recorded under `evidence/studionet/canary-v1/`; it is not the final
-deployment and is not upgraded in place. The corrected Phase 2.6 canary remains
-gated on the local security suite and controlled live lifecycle.
+deployment and is not upgraded in place. The corrected Phase 2.6 canary-v2
+deployment finalized, but its single semantic attempt was safely
+`UNDETERMINED` because of an unlisted provider reason enum; it is not frozen as
+the final protocol deployment.

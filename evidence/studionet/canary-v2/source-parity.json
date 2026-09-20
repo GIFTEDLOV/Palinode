@@ -1,0 +1,11 @@
+{
+  "contract_path": "contracts/palinode.py",
+  "deployed_contract_sha256": "9489056b03d2b53cf1ef5df1f356c35856c42c1b1ae139aa2abe581c404d4116",
+  "deployed": true,
+  "network": "studionet",
+  "rpc_url": "https://studio.genlayer.com/api",
+  "chain_id": 61999,
+  "contract_address": "0xDD918F99553717f6e157A7Ca2FfE902B4E3a438B",
+  "source_parity": "LOCAL_SOURCE_HASH_RECORDED; NETWORK_SOURCE_ENDPOINT_UNAVAILABLE_IN_INSTALLED_SDK",
+  "note": "The deployed hash is immutable evidence for canary-v2. A follow-up local enum fix is not represented as deployed and requires a future canary."
+}

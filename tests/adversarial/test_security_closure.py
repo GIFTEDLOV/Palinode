@@ -261,6 +261,7 @@ def test_semantic_schema_rejects_markdown_missing_fields_wrong_types_and_enums(d
         dict(valid, change_authentic="true"),
         dict(valid, root_effect=None),
         dict(valid, unsupported="extra"),
+        dict(valid, reason_code="MATERIAL_UNKNOWN"),
     ]
     for candidate in invalid_candidates:
         assert contract._validate_semantic_result(candidate) is False

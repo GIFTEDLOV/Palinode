@@ -102,3 +102,47 @@ The corrected contract will:
 
 The exact live seven-field response is a regression fixture in the direct and
 adversarial test suites.
+
+## Phase 2.6 corrected-canary transaction
+
+- Transaction: `0xc0d05d17df0d27e9ffca02d5aaa03a42ccd99d9d6abc59d876cd002054478e2c`
+- Contract: `0xDD918F99553717f6e157A7Ca2FfE902B4E3a438B`
+- Case: `c33a6a26f342279d29676b59c6242959cf219c1a30449508ea5f45341209b699`
+- Final status: `UNDETERMINED`
+- Consensus result: `MAJORITY_DISAGREE`
+- Active validators: three `disagree`; two idle after quorum.
+
+The leader equivalence output had the correct seven fields and parsed JSON, but
+returned this bounded result code:
+
+```json
+{
+  "result_status": "CONCLUSIVE",
+  "change_authentic": true,
+  "same_subject": true,
+  "original_evidence_affected": true,
+  "materiality": "MATERIAL",
+  "root_effect": "INVALIDATE",
+  "reason_code": "MATERIAL_REVOCATION"
+}
+```
+
+`MATERIAL_REVOCATION` was not present in the deployed contract's fixed
+`SEMANTIC_REASON_CODES` tuple. The shared validator therefore rejected the
+candidate as an unsupported enum and the deterministic post-consensus check
+returned `semantic result rejected`. This is classification **E/I** from the
+requested taxonomy: an unsupported enum value, not a missing JSON response,
+dict/double-decoding bug, source outage, or casing-only difference. The
+available hosted RPC again did not expose the documented debug trace method or
+raw provider payload beyond the decoded equivalence output.
+
+The safety result was correct: no case assessment or impact mutation was
+committed. The target evidence remained `authentication_status=CLEARED` and
+`reliance_status=ACTIVE`; the case remained `OPEN`. The exact trace is also
+stored in `evidence/studionet/canary-v2/semantic-failure.json`.
+
+The smallest local follow-up is to add `MATERIAL_REVOCATION` as an explicit
+allowed enum and list every allowed reason code in the prompt. This is not
+fuzzy parsing or a relaxation of the bounded schema. It was applied locally
+after the one permitted live semantic attempt; it was not deployed during this
+run, so canary-v2 remains an archived failed semantic-closure attempt.
