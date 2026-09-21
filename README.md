@@ -1,12 +1,16 @@
 # PALINODE
 
-PALINODE is a Semantic Revocation Graph for evidence-dependent decisions.
-It records explicit, typed dependencies between evidence, claims, decisions,
-attestations, and authorizations. When foundational evidence is later
-corrected, withdrawn, superseded, compromised, or shown to be materially
-unreliable, GenLayer adjudicates whether that change materially undermines the
-registered evidence in its dependency context. Deterministic contract logic
-then applies typed, bounded impact through the graph.
+PALINODE is a semantic revocation graph for evidence-dependent decisions: when
+foundational evidence changes, GenLayer determines whether the change is
+material and PALINODE deterministically traces and updates the downstream
+reliance graph without rewriting history.
+
+**Live app:** https://palinode-app.vercel.app<br>
+**Studionet contract:** `0x9c9d1993cd938846D1163Bba9AA81AC6d165de88`<br>
+**Network:** Studionet / chain `61999`<br>
+**Frozen source SHA-256:** `bd5e981605f2533bd5354a4e884288d585020514d4be9eaabd9cdb4ff39d4c06`<br>
+**Freeze commit:** `4a18242600218914ef4fa5de441bebd385967a1b`<br>
+**Source:** https://github.com/GIFTEDLOV/Palinode
 
 PALINODE is intentionally not a generic AI classifier, ordinary provenance
 registry, simple fact-checker, dispute escrow, or backend database with a
@@ -17,13 +21,38 @@ itself retrieve and contextualize mutable, unstructured evidence. An ordinary
 backend can perform that semantic work, but its answer is controlled by one
 operator and is not an adversarially shared GenLayer consensus outcome.
 
+## The problem
+
+A decision can be defensible when it is made and still require reconsideration
+when the evidence beneath it is corrected, withdrawn, superseded, compromised,
+or shown to be materially unreliable. Ordinary records preserve what was
+registered, but do not determine which downstream decisions are affected.
+
+## Why GenLayer
+
+The contract can enforce identities, permissions, graph structure, state
+transitions, and bounded propagation. It cannot by itself retrieve and
+contextualize mutable public evidence. A conventional backend can perform that
+semantic work, but its result is controlled by one operator. GenLayer provides
+the consensus boundary for the bounded semantic question; deterministic
+contract logic remains authoritative for every state mutation and graph effect.
+
+## How PALINODE works
+
+The lifecycle is: authenticate an immutable evidence identity, register typed
+dependencies, open a permissionless challenge when evidence changes, adjudicate
+materiality through GenLayer, propagate only the relationship-specific impact,
+and use explicit successor evidence and recovery to resolve a particular active
+cause without erasing history.
+
 ## Release status
 
 This phase contains one canonical Intelligent Contract at
 [contracts/palinode.py](contracts/palinode.py). The derived application lives
 under [frontend](frontend); it does not replace canonical contract state. There
-is no indexer database, ERC20 integration, cross-contract messaging, or GitHub
-repository in this phase. The local security closure, cause-aware recovery lifecycle, bounded
+is no indexer database, ERC20 integration, or cross-contract messaging in this
+phase. The source is published at https://github.com/GIFTEDLOV/Palinode. The
+local security closure, cause-aware recovery lifecycle, bounded
 pagination, adversarial tests, mutation harness, integration harness, and one
   controlled Studionet canary are implemented. Canary-v1 and canary-v2 remain
   archived historical deployments: v1 recorded a malformed-output failure and
@@ -97,6 +126,54 @@ views expose `authentication_status`, the compatibility alias
 `assessment_status`, and `reliance_status` directly. Revocation review is
 case-scoped and never rewrites authentication.
 
+## Authentication vs reliance
+
+Evidence authentication and current reliance are separate dimensions. `CLEARED`
+authentication means the authority-bound source was retrieved and matched its
+committed URI, digest, and byte length. It does not mean the evidence can never
+be challenged. A later material revocation can leave authentication `CLEARED`
+while current reliance becomes `INVALIDATED`, `QUESTIONED`, or `SUPERSEDED`.
+
+## Dependency graph
+
+The graph contains `EVIDENCE`, `CLAIM`, `DECISION`, `ATTESTATION`, and
+`AUTHORIZATION` nodes. Edges are typed as `SUPPORTS`, `REQUIRES`,
+`DERIVED_FROM`, `QUALIFIES`, `AUTHORIZES`, `CORROBORATES`, or `CONTRADICTS`.
+Creation ordering proves acyclicity without an unbounded traversal.
+
+## Revocation and blast radius
+
+A revocation case locks the target evidence, notice authority, notice URI,
+digest, and byte length. GenLayer returns only bounded structured fields. The
+contract then applies a typed root effect and a resumable bounded queue. A
+`SUPPORTS` edge can question a claim while a `REQUIRES` edge can quarantine a
+decision; an adverse source does not automatically invalidate every descendant.
+
+## Successor evidence and recovery
+
+Replacement evidence is a new immutable record. A successor relationship and a
+cause-aware recovery case can resolve only the adverse cause it proves
+corrected. The original evidence, revocation case, and status history remain
+inspectable. This is succession, not rewriting.
+
+## Live Studionet proof
+
+The recorded live proof is:
+
+1. Evidence V1 authenticated as `CLEARED`.
+2. Revocation finalized as `CONCLUSIVE` / `MATERIAL` / `INVALIDATE` with
+   `MATERIAL_WITHDRAWAL`.
+3. Typed propagation changed the Claim to `QUESTIONED` and the Decision to
+   `QUARANTINED`.
+4. Evidence V2 authenticated independently as `CLEARED`.
+5. Recovery finalized as `CONCLUSIVE` / `SUPERSEDE` /
+   `RECOVERY_RESOLVED_SUPERSEDE`.
+6. V1 authentication remained `CLEARED` while its current reliance became
+   `SUPERSEDED`.
+
+This demonstrates that historical authentication can remain true while current
+reliance evolves.
+
 ## Lifecycle
 
 1. An authority registers a canonical HTTPS origin and proves control by a
@@ -139,7 +216,7 @@ fixed-size history/telemetry rings, mirror limits, string/body limits, and
 per-call step limits remain. Lifetime IDs are exposed only through bounded page
 views, never through an unbounded full-list getter.
 
-## Trust boundaries
+## Security model
 
 Canonical state is the GenLayer Intelligent Contract state and the consensus
 result accepted for the semantic block. Validator selection is protocol-owned;
@@ -160,7 +237,7 @@ final. The client state model therefore keeps separate fields for submission,
 consensus acceptance, execution success, and finalization, and resumes polling
 the same transaction ID after timeout instead of automatically resubmitting.
 
-## Frontend application
+## Architecture
 
 The React/TypeScript/Vite application in `frontend/` reads bounded canonical
 pages from the frozen Studionet contract and presents the dependency graph,
@@ -206,7 +283,13 @@ uses a synthetic provider for safe browser behavior checks; signing with a
 real wallet remains an operator action and no test writes were broadcast by
 the release pass.
 
-## Development commands
+## Testing
+
+The recorded freeze gates are 28 direct tests, 5 invariant tests, 34
+adversarial tests, 2 property tests, and 34/34 security mutations killed.
+These are engineering test results, not formal verification.
+
+## Run locally
 
 From PowerShell in the repository root:
 
