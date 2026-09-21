@@ -123,19 +123,25 @@ def test_case_queue_is_scoped_and_cursor_is_monotonic(direct_vm, direct_deploy):
         "Queue evidence",
         evidence_authority,
     )
+    direct_vm.mock_web(
+        re.escape("https://evidence.example/queue"),
+        {"status": 200, "body": body},
+    )
+    contract.authenticate_evidence(evidence_id)
+    direct_vm.clear_mocks()
     child = contract.register_claim("queue", "Queue child")
     contract.register_dependency(evidence_id, child, "REQUIRES")
     case_id = contract.open_revocation_case(
         evidence_id,
-        notice_authority,
-        "https://notice.example/queue",
+        evidence_authority,
+        "https://evidence.example/queue-notice",
         sha(notice),
         len(notice),
         "CHANGED",
         "queue",
     )
-    direct_vm.mock_web(r"evidence\.example/queue", {"status": 200, "body": body})
-    direct_vm.mock_web(r"notice\.example/queue", {"status": 200, "body": notice})
+    direct_vm.mock_web(r"evidence\.example/queue$", {"status": 200, "body": body})
+    direct_vm.mock_web(r"evidence\.example/queue-notice$", {"status": 200, "body": notice})
     direct_vm.mock_llm(
         r"PALINODE semantic adjudicator",
         '{"result_status":"CONCLUSIVE","change_authentic":true,"same_subject":true,"original_evidence_affected":true,'
