@@ -1,0 +1,10 @@
+{
+  "live_status": "BLOCKED_NO_MUTABLE_FIXTURE",
+  "local_regression": "tests/v2/test_reviewer_remediation.py::test_changed_evidence_bytes_short_circuit_semantic_execution",
+  "probe_byte_length": 79,
+  "probe_status": 404,
+  "reason": "The dedicated mutable path is not published, and this run has no authorized fixture deployment/mutation credential. The live mismatch was not faked.",
+  "semantic_call_prevented": true,
+  "semantic_call_submitted": false,
+  "uri": "https://palinode-fixture.vercel.app/reviewer/mutable-evidence-v4.txt"
+}

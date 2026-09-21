@@ -1,0 +1,33 @@
+{
+  "authority": {
+    "authority_address": "0x7e68eadc3bedff1e508d25cc7f1611d1455b4fc4",
+    "authority_id": "f5d0db56d7bf3eb85e2b5ef02f15ec06170db45d1ada322982e8d382c664f4b3",
+    "canonical_origin": "https://palinode-fixture.vercel.app",
+    "challenge_nonce": "PALINODE_FIXTURE_NONCE_V1",
+    "challenge_uri": "https://palinode-fixture.vercel.app/.well-known/palinode.json",
+    "current_version": "1",
+    "registered_at": "2026-09-21T17:51:43.056448Z",
+    "registered_sequence": "1",
+    "status": "ACTIVE",
+    "verification_policy": "WELL_KNOWN_ADDRESS_NONCE_V1"
+  },
+  "authority_id": "f5d0db56d7bf3eb85e2b5ef02f15ec06170db45d1ada322982e8d382c664f4b3",
+  "expected_controller": "0x7e68EAdc3bEDfF1E508D25cC7f1611D1455B4FC4",
+  "expected_origin": "https://palinode-fixture.vercel.app",
+  "expected_policy": "WELL_KNOWN_ADDRESS_NONCE_V1",
+  "registration_tx_id": "0xd1dad5b556ce098ff3d2e4a5ae378fe4fd8e283bbe586a50701b5b0c511dfe85",
+  "version_1": {
+    "authority_address": "0x7e68eadc3bedff1e508d25cc7f1611d1455b4fc4",
+    "authority_id": "f5d0db56d7bf3eb85e2b5ef02f15ec06170db45d1ada322982e8d382c664f4b3",
+    "canonical_origin": "https://palinode-fixture.vercel.app",
+    "challenge_nonce": "PALINODE_FIXTURE_NONCE_V1",
+    "challenge_uri": "https://palinode-fixture.vercel.app/.well-known/palinode.json",
+    "created_at": "2026-09-21T17:51:43.056448Z",
+    "created_sequence": "1",
+    "status": "ACTIVE",
+    "verification_policy": "WELL_KNOWN_ADDRESS_NONCE_V1",
+    "version": "1"
+  },
+  "well_known_sha256": "037181c4cfad5a5eed35d09036d9c5acfa605b185eeb0f73cbd4b067581bd635",
+  "well_known_status": 200
+}

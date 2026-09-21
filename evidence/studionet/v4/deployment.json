@@ -1,0 +1,27 @@
+{
+  "api_counts_expected": {
+    "total": 46,
+    "views": 25,
+    "writes": 21
+  },
+  "balance_wei_before": "0",
+  "chain_id": 61999,
+  "client_chain_id": 61999,
+  "consensus_status": "FINALIZED",
+  "contract_address": "0x05243cB6db90EE210a22Aa3c16fdc4F893d7b13b",
+  "deployer_address": "0x7e68EAdc3bEDfF1E508D25cC7f1611D1455B4FC4",
+  "deployment_source_commit": "14bb4574a8d248c978b55ff1fb70f32c0293f313",
+  "deployment_source_path": "contracts/palinode_v2.py",
+  "deployment_source_sha256": "0f23a120776b09be989e6112b34d27ae415e1808232be591f94d1e17d80c5601",
+  "deployment_tx_id": "0x77dff7d687eea1168be519b0ddced4e6d6b3854a17be743190654fb7f5d3281f",
+  "execution_result": "FINISHED_WITH_RETURN",
+  "fee_behavior": "zero gas price; prior successful Studionet mechanism; no private key recorded",
+  "final_status": "FINALIZED_SUCCESS",
+  "gas_price": "0",
+  "latest_block": 1790013051,
+  "latest_nonce": 41,
+  "pending_nonce": 41,
+  "private_key_in_evidence": false,
+  "rpc_chain_id": 61999,
+  "rpc_url": "https://studio.genlayer.com/api"
+}

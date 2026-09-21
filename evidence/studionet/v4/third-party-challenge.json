@@ -1,0 +1,23 @@
+{
+  "live_status": "BLOCKED_NO_SEPARATE_AUTHORITY_DECLARATION",
+  "local_standing_regression": "tests/v2/test_reviewer_remediation.py::test_unrelated_authority_cannot_impersonate_publisher_withdrawal",
+  "probe": [
+    {
+      "byte_length": 79,
+      "status": 404,
+      "uri": "https://palinode-fixture.vercel.app/third-party/.well-known/palinode.json"
+    },
+    {
+      "byte_length": 79,
+      "status": 404,
+      "uri": "https://palinode-fixture.vercel.app/challenge/.well-known/palinode.json"
+    },
+    {
+      "byte_length": 79,
+      "status": 404,
+      "uri": "https://palinode-fixture.vercel.app/authority-c/.well-known/palinode.json"
+    }
+  ],
+  "reason": "The controlled public fixture exposes only Authority A's declaration; no deployer/fixture credential for an Authority C origin is available. No fake unrelated authority was created.",
+  "third_party_authority_id": null
+}

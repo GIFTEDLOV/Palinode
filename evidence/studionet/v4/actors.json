@@ -1,0 +1,15 @@
+{
+  "ATTACKER_X": {
+    "address": "0x80048537620522Fc5d92537E53A548407a0EA5a1",
+    "role": "unauthorized graph/lineage attacker"
+  },
+  "AUTHORITY_A": {
+    "address": "0x7e68EAdc3bEDfF1E508D25cC7f1611D1455B4FC4",
+    "role": "fixture authority controller and deployer"
+  },
+  "DEPENDENT_B": {
+    "address": "0x7B6C4AAF8477CEe421cd8844832B50f9330741f9",
+    "role": "child controller and independent dependent"
+  },
+  "private_keys_recorded": false
+}
