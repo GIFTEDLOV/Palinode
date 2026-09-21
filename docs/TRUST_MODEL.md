@@ -17,19 +17,26 @@
 
 ## Registration and access
 
-Registration is permissionless. Anyone may register an immutable node, typed
-edge, successor assertion, or revocation notice. This is an explicit protocol
-choice: the contract records claims and adjudicated impact without giving an
-owner the ability to rewrite evidence, erase nodes, override consensus, or
-change the transition policy at runtime.
+Generic non-evidence node registration and case submission are permissionless,
+but authority-bearing writes are not. Evidence registration requires the
+active source-authority controller; dependency registration requires control of
+both endpoints; and successor lineage requires the predecessor authority
+controller plus a cleared same-lineage successor. This prevents an arbitrary
+caller from poisoning another party's graph or consuming its bounded slots.
+The contract still records immutable claims and adjudicated impact without
+giving an owner the ability to rewrite evidence, erase nodes, override
+consensus, or change the transition policy at runtime.
 
 Adverse review is also permissionless. A case submitter does not need to be
 the evidence creator, and the evidence creator cannot suppress, erase, cancel,
 or rewrite a valid case. Exact duplicates are rejected while distinct notices
 remain separate canonical cases.
 
-Authority-backed evidence and notices require a verified authority ID. The
-authority is bound to the registering address and normalized HTTPS origin by a
+Authority-backed evidence and notices require a verified authority ID. An
+authoritative notice is restricted to the target evidence's authority lineage;
+an unrelated verified authority is recorded as a third-party challenge and
+cannot produce an authoritative invalidation. The authority is bound to the
+registering address and normalized HTTPS origin by a
 consensus-checked `/.well-known/palinode.json` challenge. A caller cannot label
 an arbitrary origin as authoritative, select the validators, or choose the
 semantic decision-makers for its own case. Authority IDs have versioned
@@ -62,6 +69,8 @@ legacy `assessment_status` alias) and `reliance_status` simultaneously.
 semantic rejection or clearance. Revocation review is case-scoped and cannot
 rewrite authentication. Any caller may retry through digest-verified
 cross-origin retrieval mirrors without changing the locked evidence identity.
+Semantic adjudication is evidence-level only; relationship-specific downstream
+effects are deterministic and do not get invented by the model.
 Mirrors are not authority records and cannot clear an object by themselves.
 
 Recovery is not a trust shortcut. A caller may open a recovery case only after

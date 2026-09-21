@@ -37,6 +37,35 @@ killed 27/27 targeted mutants with no survivors.
 | Controlled authority fixture was absent for live proof | High | Would force unsafe test weakening | Deployed fictional static fixture and verified exact public bytes; well-known declaration binds the resolved public address | fixture manifest and remote byte parity checks |
 | A 64-slot active-cause set could reject a later stronger finding and suppress its impact | Critical | Yes: a 65th material/invalidating case could revert before recording or escalating its cause | Added a bounded monotonic overflow summary with count, strongest severity, latest strongest case, and rolling commitment; named recovery cannot clear the summary | `test_65th_stronger_cause_is_retained_as_monotonic_overflow_safety_lock` and three active-cause mutation guards |
 
+The Phase 2.5 rows above are retained as historical audit evidence for the
+archived release candidate. The v2 candidate supersedes the old active-cause
+overflow design with individually keyed causes and constant-size severity
+counters; it does not use the unnamed overflow summary described in the
+historical row.
+
+## Consolidated reviewer remediation — v2 candidate, not deployed
+
+| Finding | Correction | Evidence |
+|---|---|---|
+| F-01 successor hijack | Only the predecessor authority controller can register a same-subject, same-lineage, independently cleared successor; lineage never directly changes reliance. | `test_unauthorized_successor_is_rejected_and_link_does_not_change_reliance` |
+| F-02 graph poisoning | Dependency registration requires control of both endpoints and stores the edge assertor. | dependency authorization and 65-attempt fan-out tests |
+| F-03/F-04 evidence semantics | Revocation requires `CLEARED`; exact evidence bytes are checked for length and SHA-256 before any semantic call. | digest short-circuit and non-cleared-state tests |
+| F-05 late edges | New edges copy active case causes and reopen the bounded case queue for newly reached descendants. | late-edge descendant reconciliation test |
+| F-06 notice standing | Same-lineage notices are authoritative; unrelated authority notices are third-party challenges and cannot produce `MATERIAL`/`INVALIDATE`; revoked notice authorities are rejected. | standing tests |
+| F-07 active-cause recovery | No 64-cause lifetime cap or unnamed overflow; each cause is keyed by node/case, counters derive severity, and paginated views bound reads. | 100-cause individual recovery and cause-page tests |
+| F-08 prompt injection | Evidence, notices, and successor data are JSON-serialized with angle brackets escaped before prompt framing. | serialized hostile-payload test |
+| F-09 recovery ordering | Recovery opening and assessment require the adverse case to be `COMPLETE` with an exhausted impact queue. | recovery-ordering test and mutation guard |
+| F-10 size mismatch | Registration, authentication, mirrors, notices, and semantic retrieval share the 65,536-byte maximum. | exact boundary test |
+| F-17/F-18 metadata semantics | Evidence registration is source-controller authorized and authentication describes source/byte identity, not real-world subject proof. | evidence-controller and metadata documentation |
+| F-19/F-28 authority liveness | Authority versions are paginated without a permanent eight-version cap; benign rotation supersedes old versions while preserving historical reauthentication. | rotation/reauthentication test |
+| F-20 mirrors | Mirror registration is controller-authorized and remains retrieval-only. | mirror authorization test |
+| F-21/F-29/F-30 history | Recent history is explicitly bounded; total counters and immutable cases/lineage preserve the documented history model. | bounded-history implementation and lineage view |
+| F-22 semantic scope | The model decides evidence-level materiality; typed downstream propagation is deterministic. | prompt-scope regression |
+
+The v2 candidate focused suite passes 17 tests and the selected v2 security
+mutation harness kills 12/12 guards. The archived contract remains unchanged;
+the v2 candidate has not been deployed.
+
 The later controlled Studionet canary used the exact fixture and source hash
 recorded in `evidence/studionet/`. The single deployment finalized successfully
 and all deterministic setup writes finalized with `FINISHED_WITH_RETURN`.

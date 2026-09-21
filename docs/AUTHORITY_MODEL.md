@@ -20,9 +20,10 @@ label is never authority proof.
 
 `rotate_source_authority(authority_id, challenge_nonce)` is permissionless and
 uses the canonical origin's declaration to prove the new controller. It creates
-a new version, revokes the prior version, and updates the stable authority's
-current version. The previous controller cannot create or impersonate the new
-version after rotation. The bounded version count is eight.
+a new version, marks the prior version `SUPERSEDED`, and updates the stable
+authority's current version. The previous controller cannot create or
+impersonate the new version after rotation. Authority versions are stored
+without a permanent lifetime count cap and exposed through bounded pages.
 
 `revoke_source_authority(authority_id)` is restricted to the current version's
 controller. Revocation lowers trust: new evidence and new authority-bound
@@ -39,4 +40,3 @@ or an unsupported signing primitive is available inside GenVM. The current
 implementation rejects credentials, non-HTTPS schemes, fragments, malformed
 paths, and obvious loopback/private host forms. A controlled public HTTPS
 fixture is required for live end-to-end proof.
-

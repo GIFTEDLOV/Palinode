@@ -39,18 +39,18 @@ content digests or sources create distinct immutable objects.
 
 ## Bounds
 
-| Field | Phase 1 bound |
+| Field | v2 candidate bound |
 |---|---:|
 | Source URI | 10–2048 characters, `https://` only |
 | SHA-256 | exactly 64 lowercase hexadecimal characters |
-| Declared byte length | 1–16,777,216 bytes |
+| Declared byte length | 1–65,536 bytes |
 | Subject identifier | 1–128 characters from a restricted identifier alphabet |
 | Title | 1–160 characters, no control/newline characters |
 | Semantic fetch body | at most 65,536 bytes per page |
 
-The fetch bound protects the semantic prompt. A declared source may be larger
-than the semantic fetch bound, but assessment then returns a retryable explicit
-`SOURCE_TOO_LARGE` result rather than truncating silently.
+Registration, authentication, mirrors, notices, and semantic retrieval use the
+same 65,536-byte maximum. An evidence object cannot be accepted into a larger
+class that the promised semantic review path cannot later process.
 
 ## Historical validity and current reliance
 
@@ -71,7 +71,8 @@ dimensions directly:
 New nodes are `UNASSESSED` and `ACTIVE`. Only `authenticate_evidence` can
 change `authentication_status`; opening, retrying, or assessing a revocation
 case never rewrites it. Authentication proves only the exact authority-bound
-source availability, SHA-256, and byte length. Revocation review has its own
+source availability, SHA-256, and byte length. The subject field is registered
+metadata; it is not proof of real-world identity. Revocation review has its own
 case status, result, materiality, and root-effect fields. The case may change
 reliance without changing authentication: authenticated bytes can later become
 unsafe to rely on while remaining historically authenticated.
@@ -108,7 +109,8 @@ The URL is a locator, not immutable storage. The registered digest remains the
 historical identity. During assessment, the current evidence body is retrieved
 only inside the nondeterministic boundary; the notice body must match its
 registered digest and exact byte length. Current evidence digest drift is
-provided as context for adjudication rather than silently rewritten into state.
+rejected before semantic adjudication rather than supplied to the model as if
+it were the committed evidence.
 
 If the committed URL is unavailable, the assessment state becomes
 `SOURCE_UNAVAILABLE` and any caller may invoke the retry path. A mirror is
@@ -120,6 +122,8 @@ byte length are never rewritten.
 ## Replacement and succession
 
 A replacement evidence record is created normally, with new identity, creator,
-sequence, source, digest, and timestamp. `link_evidence_successor` stores one
-successor per old evidence and one predecessor per new evidence. Neither object
-is overwritten.
+sequence, source, digest, and timestamp. `link_evidence_successor` is an
+authority-controlled lineage assertion and stores one successor per old
+evidence and one predecessor per new evidence. It does not itself change
+reliance; only a successful recovery result may produce `SUPERSEDED`. Neither
+object is overwritten.

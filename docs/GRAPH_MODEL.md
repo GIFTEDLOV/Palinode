@@ -19,15 +19,17 @@ Supported dependency relationships are exactly:
 `SUPPORTS`, `REQUIRES`, `DERIVED_FROM`, `QUALIFIES`, `AUTHORIZES`,
 `CORROBORATES`, and `CONTRADICTS`.
 
-An edge stores its own ID, parent, child, relationship, creation sequence, and
-active flag. It is accepted only if both nodes exist, the nodes differ, the
+An edge stores its own ID, parent, child, relationship, creation sequence,
+assertor, and active flag. It is accepted only if both nodes exist, the nodes differ, the
 relationship is supported, the identity tuple is not duplicated, and:
 
 ```text
 node_sequence(parent) < node_sequence(child)
 ```
 
-This is the exact DAG invariant. Since node sequences never change and all
+The caller must control both endpoint nodes; an arbitrary third party cannot
+assert a dependency or consume either endpoint's capacity. This is the exact
+DAG invariant. Since node sequences never change and all
 supported writes enforce the inequality, every directed path strictly
 increases in sequence. A directed cycle would require a strict increase around
 the cycle and is therefore impossible without an unbounded graph traversal.
@@ -78,7 +80,14 @@ deduplicated. Calling the method after completion returns zero and cannot
 mutate state. A transaction never performs recursive DFS/BFS or scans the
 entire graph.
 
+If an edge is added after a material case has already affected its parent, the
+contract copies every currently active case-specific cause across the new
+relationship and reopens that case's bounded queue when descendants also need
+reconciliation. It does not invoke semantic consensus again. If the bounded
+cause scan cannot be completed safely, the edge is rejected rather than
+silently creating an untracked dependency.
+
 Recovery uses a separate queue and cursor. It removes only the named adverse
 case's active cause from each affected node. Other active causes remain in the
-bounded per-node cause set; only the final resolved cause can permit
+individually recoverable cause registry; only the final resolved cause can permit
 `REINSTATED` or `SUPERSEDED` according to the accepted recovery effect.

@@ -36,11 +36,14 @@ duplicate, and capacity rules.
 The adjudicator is not asked whether the evidence is broadly true. It is asked:
 
 > Does the submitted correction/revocation materially undermine the specific
-> registered evidence in the context in which downstream nodes rely on it?
+> registered evidence?
 
-The prompt supplies registered metadata, bounded retrieved data, and the
-current retrieved digest as untrusted data. It explicitly instructs the model
-not to follow commands embedded in source pages.
+The model receives no unbounded graph traversal or downstream decision text.
+The prompt supplies registered metadata and bounded retrieved data as
+untrusted data. Deterministic relationship-specific propagation supplies the
+downstream graph context after the bounded evidence-level result. Before this
+prompt is constructed, the fetched target evidence and notice must match their
+locked SHA-256 and exact byte lengths.
 
 ## Strict result
 
@@ -99,7 +102,10 @@ target evidence or notice during reassessment.
 
 ## Authority and reviewer safety
 
-Notice URLs must reference a verified, currently active source authority. The source authority
+Notice URLs must reference a verified, currently active source authority. An
+authoritative notice must use the same authority lineage as the target
+evidence; an unrelated verified authority is explicitly a third-party
+challenge and cannot yield `MATERIAL`/`INVALIDATE`. The source authority
 registry uses a consensus-checked canonical
 `https://origin/.well-known/palinode.json` document binding the registering
 address, origin, policy, and nonce. A case locks the notice authority version

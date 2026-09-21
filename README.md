@@ -181,10 +181,12 @@ reliance evolves.
    caller address, policy, and nonce. Authorities have a stable ID and
    versioned `ACTIVE`/`REVOKED` lifecycle; rotation creates a new version and
    never rewrites historical evidence.
-2. A caller registers evidence or a non-evidence node. Evidence must reference
-   a verified authority whose origin contains the normalized source URI.
-   Registration is permissionless and generates the canonical ID on-chain.
-3. A caller registers a typed dependency from an earlier node to a later node.
+2. The active source-authority controller registers evidence; generic
+   non-evidence node registration remains permissionless. Evidence must
+   reference a verified authority whose origin contains the normalized source
+   URI. The canonical ID is generated on-chain.
+3. A caller controlling both endpoints registers a typed dependency from an
+   earlier node to a later node. The edge assertor is stored on-chain.
 4. Any caller opens a revocation case against evidence with a verified notice
    authority, locked URI, digest, byte length, and reason code. Owners cannot
    suppress or erase cases.
@@ -202,8 +204,9 @@ reliance evolves.
 7. Deterministic code records the consensus result and applies the root effect.
 8. `process_impact(case_id, max_steps)` resumes bounded edge propagation until
    the case is complete.
-9. Replacement evidence is a new immutable object. `link_evidence_successor`
-   records lineage without rewriting the old object.
+9. Replacement evidence is a new immutable object. The predecessor authority
+   controls `link_evidence_successor`; it records lineage without changing
+   reliance or rewriting the old object.
 10. A permissionless recovery case binds one material adverse case to one
     already linked and independently `CLEARED` successor. GenLayer adjudicates
     whether that successor resolves the specific defect; deterministic bounded
@@ -338,8 +341,10 @@ automatically resubmits them.
   authoritative integration target.
 - The current propagation policy is conservative but intentionally not a
   complete domain theory for every decision system.
-- Authority version history is bounded to eight versions per authority; this is
-  a per-authority execution bound, not a protocol-wide lifetime capacity cap.
+- Authority versions have no permanent eight-version lifetime cap. They are
+  paginated for bounded reads; benign rotation marks the old version
+  `SUPERSEDED`, while explicit revocation remains distinct and historical
+  evidence keeps its recorded version.
 - Live recovery and semantic behavior still depend on public HTTPS availability
   and real validator agreement; local mocks cannot prove hosted behavior.
 - The direct harness uses the stable `v0.2.16` GenVM artifact. The repository

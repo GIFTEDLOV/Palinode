@@ -16,6 +16,7 @@ opening_note)` is permissionless. Deterministic guards require:
 - `link_evidence_successor` explicitly binds old evidence to successor;
 - the adverse case targets the affected evidence and is conclusive `MATERIAL`;
 - the adverse case still owns an active cause; and
+- the adverse case is `COMPLETE` and its impact cursor has exhausted its queue;
 - the identity `(affected_node_id, successor_evidence_id, adverse_case_id)` has
   not already been used.
 
@@ -56,15 +57,14 @@ ring plus a monotonic counter.
 ## Active causes
 
 Every material revocation case that affects a node creates a distinct
-`node_id|case_id` cause with its typed severity. A node stores at most 64 named
-active cause slots; this bounds per-node execution while preserving historical
-case records. The slot limit is not allowed to suppress a later finding: when
-the slots are full, additional causes are retained in a monotonic overflow
-summary containing a count, strongest severity, latest strongest case ID, and
-rolling commitment. The overflow summary is a conservative safety lock; named
-slot recovery cannot clear it, so the node cannot become safer than the
-recorded causes justify. This is exposed by `get_active_causes` and keeps
-recovery accounting fail-closed at the boundary.
+`node_id|case_id` cause with its typed severity. Active causes are stored as
+individually recoverable case keys; there is no lifetime 64-cause cap and no
+unnamed overflow safety lock. Constant-size severity counters derive the
+current reliance state, while `get_active_causes_page` exposes bounded cause
+pages. A new edge is rejected fail-closed if its immediate reconciliation
+would exceed the bounded per-write cause scan; this protects execution without
+discarding or hiding any existing cause. Recovery can resolve arbitrary cause
+IDs one at a time.
 
 The current reliance state is the maximum active ordinary severity:
 
