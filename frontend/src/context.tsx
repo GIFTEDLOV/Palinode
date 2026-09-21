@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
 import { CHAIN_ID, CONTRACT_ADDRESS, RPC_URL } from './config';
 import type { ProtocolSnapshot, TrackedTransaction } from './types';
 import { connectedWalletState, connectWallet, loadSnapshot, pollTransaction, publicClient, walletClient } from './lib/client';
@@ -95,6 +96,7 @@ type ProtocolContextValue = ProtocolSnapshot & { refresh: (force?: boolean) => P
 const ProtocolContext = createContext<ProtocolContextValue | null>(null);
 
 export function ProtocolProvider({ children }: { children: ReactNode }) {
+  const location = useLocation();
   const [snapshot, setSnapshot] = useState<ProtocolSnapshot>(EMPTY_SNAPSHOT);
   const refresh = useCallback(async (force = false) => {
     if (force) sessionStorage.removeItem(SNAPSHOT_CACHE_KEY);
@@ -120,11 +122,12 @@ export function ProtocolProvider({ children }: { children: ReactNode }) {
     }
   }, []);
   useEffect(() => {
+    if (!location.pathname.startsWith('/app')) return undefined;
     void refresh();
     const onTerminal = () => { void refresh(true); };
     window.addEventListener('palinode:transaction-terminal', onTerminal);
     return () => window.removeEventListener('palinode:transaction-terminal', onTerminal);
-  }, [refresh]);
+  }, [location.pathname, refresh]);
   return <ProtocolContext.Provider value={{ ...snapshot, refresh }}>{children}</ProtocolContext.Provider>;
 }
 

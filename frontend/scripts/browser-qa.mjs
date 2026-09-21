@@ -96,7 +96,7 @@ const targets = process.env.PALINODE_TARGET === 'wallet-only'
 
 for (const [target, base] of targets) {
   const context = await browser.newContext({ viewport: viewports.desktop_1440x900 });
-  await context.route('**/api/rpc', async (route) => {
+  await context.route('**/api/rpc**', async (route) => {
     const request = route.request();
     if (request.method() !== 'POST') return route.continue();
     let payload;
@@ -168,7 +168,7 @@ for (const [target, base] of targets) {
 }
 
 const walletContext = await browser.newContext({ viewport: viewports.mobile_430x932 });
-await walletContext.route('**/api/rpc', (route) => route.abort());
+await walletContext.route('**/api/rpc**', (route) => route.abort());
 await walletContext.addInitScript(() => {
   let chain = '0x1';
   let accounts = [];
