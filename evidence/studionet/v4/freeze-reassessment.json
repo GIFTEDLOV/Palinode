@@ -1,0 +1,14 @@
+{
+  "authority_rotation_live_result": "SKIPPED_OPTIONAL",
+  "byte_mismatch_proof": "PASS",
+  "contract_source_changed": false,
+  "current_head_before_evidence_commit": "d3bc0cefa138edfb607b386cff57258403f6635c",
+  "existing_v4_proofs_still_valid": true,
+  "freeze_reason": "Both required live reviewer proofs passed against the existing V4 address.",
+  "new_contract_deployment_attempted": false,
+  "third_party_challenge_proof": "PASS",
+  "v4_contract_address": "0x05243cB6db90EE210a22Aa3c16fdc4F893d7b13b",
+  "v4_freeze_status": "PASS",
+  "v4_release_source_commit": "14bb4574a8d248c978b55ff1fb70f32c0293f313",
+  "v4_source_sha256": "0f23a120776b09be989e6112b34d27ae415e1808232be591f94d1e17d80c5601"
+}

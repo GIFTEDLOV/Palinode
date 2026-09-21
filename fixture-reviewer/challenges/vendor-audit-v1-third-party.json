@@ -1,0 +1,1 @@
+{"fixture":"PALINODE fictional reviewer test data","notice_type":"third_party_challenge","subject":"fixture-vendor-001","target":"vendor-audit-v1","claim":"An independent review contradicts the original key-rotation finding.","basis":"The key-rotation control was not satisfied during the represented period.","authority_role":"independent_challenger"}

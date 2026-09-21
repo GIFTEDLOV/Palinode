@@ -1,0 +1,20 @@
+{
+  "authority_c_address": "0xc6053866Ef76cf4f732A2141BFC2F20c6865062C",
+  "body_a_byte_length": 179,
+  "body_a_sha256": "8c29302608be237343d9f2ce820c23627e375df11b76de3762df3089c14009f2",
+  "body_b_byte_length": 183,
+  "body_b_sha256": "c386790d1b373243e072b1c0315f5078f786d5ca2f3c51d3d8a7a520e078858c",
+  "canonical_origin": "https://palinode-reviewer-fixture.vercel.app",
+  "challenge_byte_length": 352,
+  "challenge_sha256": "090f74164d70cba41e90729cc8690b08c6a735c4d3434a8f524bc6a4cae74d0b",
+  "mutable_notice_unchanged": true,
+  "notice_byte_length": 330,
+  "notice_sha256": "728ea8309d32a4f24011b4c8bb022f1e124810063069d64daca5a75d517956de",
+  "private_material_recorded": false,
+  "project_name": "palinode-reviewer-fixture",
+  "stage_a_deployment_id": "dpl_CBM9Q7DiQ1jfeqitqGn91jzufzhr",
+  "stage_a_production_url": "https://palinode-reviewer-fixture-rnmv8txnz.vercel.app",
+  "stage_b_deployment_id": "dpl_AFbNBh1vSUhaLUQgr7a8gppSfABf",
+  "stage_b_production_url": "https://palinode-reviewer-fixture-mmzacwuj9.vercel.app",
+  "well_known_unchanged": true
+}
