@@ -6,11 +6,11 @@ material and PALINODE deterministically traces and updates the downstream
 reliance graph without rewriting history.
 
 **Live app:** https://palinode-app.vercel.app<br>
-**Studionet contract:** `0x9c9d1993cd938846D1163Bba9AA81AC6d165de88`<br>
+**Studionet contract (frozen V4):** `0x05243cB6db90EE210a22Aa3c16fdc4F893d7b13b`<br>
 **Network:** Studionet / chain `61999`<br>
-**Frozen source SHA-256:** `bd5e981605f2533bd5354a4e884288d585020514d4be9eaabd9cdb4ff39d4c06`<br>
-**Freeze commit:** `4a18242600218914ef4fa5de441bebd385967a1b`<br>
-**Source:** https://github.com/GIFTEDLOV/Palinode
+**Frozen source SHA-256:** `0f23a120776b09be989e6112b34d27ae415e1808232be591f94d1e17d80c5601`<br>
+**Freeze commit:** `14bb4574a8d248c978b55ff1fb70f32c0293f313`<br>
+**Source:** `contracts/palinode_v2.py`
 
 PALINODE is intentionally not a generic AI classifier, ordinary provenance
 registry, simple fact-checker, dispute escrow, or backend database with a
@@ -47,23 +47,23 @@ cause without erasing history.
 
 ## Release status
 
-This phase contains one canonical Intelligent Contract at
-[contracts/palinode.py](contracts/palinode.py). The derived application lives
+This release contains one canonical Intelligent Contract at
+[contracts/palinode_v2.py](contracts/palinode_v2.py). The former V1 deployment at
+`0x9c9d1993cd938846D1163Bba9AA81AC6d165de88` is archived historical evidence;
+it is not upgraded in place. The derived application lives
 under [frontend](frontend); it does not replace canonical contract state. There
 is no indexer database, ERC20 integration, or cross-contract messaging in this
 phase. The source is published at https://github.com/GIFTEDLOV/Palinode. The
 local security closure, cause-aware recovery lifecycle, bounded
-pagination, adversarial tests, mutation harness, integration harness, and one
-  controlled Studionet canary are implemented. Canary-v1 and canary-v2 remain
-  archived historical deployments: v1 recorded a malformed-output failure and
-  v2 safely rejected an unlisted enum. Canary-v3 was deployed exactly once
-  after the strict prompt/schema fix and all local gates passed. Its one live
-  semantic revocation finalized as `CONCLUSIVE`/`MATERIAL`/`INVALIDATE`,
-  bounded propagation completed, and the controlled successor recovery
-  finalized as `SUPERSEDE`. The V3 address and readbacks are archived under
-  `evidence/studionet/canary-v3/`; see
-  [docs/CONTRACT_FREEZE.md](docs/CONTRACT_FREEZE.md). The frontend targets the
-  same frozen address and source hash and does not modify the contract.
+pagination, adversarial tests, mutation harness, integration harness, and a
+controlled Studionet proof are implemented. V4 is the frozen release after
+reviewer closure: 46 public methods (21 writes, 25 views), cross-party
+dependency authorization, typed third-party challenge standing, active-cause
+propagation, and deterministic byte-identity checks. Live reviewer evidence
+includes Authority C's `MATERIAL` / `QUESTION` challenge and a same-URL
+`SOURCE_DIGEST_MISMATCH` proof before semantic adjudication. See
+[docs/CONTRACT_FREEZE.md](docs/CONTRACT_FREEZE.md) and
+[docs/FRONTEND_V4_MIGRATION.md](docs/FRONTEND_V4_MIGRATION.md).
 
 The target is stable Studionet:
 
@@ -170,6 +170,12 @@ The recorded live proof is:
    `RECOVERY_RESOLVED_SUPERSEDE`.
 6. V1 authentication remained `CLEARED` while its current reliance became
    `SUPERSEDED`.
+7. An unrelated Authority C challenge was classified as
+   `MATERIAL_THIRD_PARTY_CHALLENGE` with `QUESTION`; it could not produce
+   source-authoritative `INVALIDATE` semantics.
+8. A registered BODY A served as BODY B at the same URI and the contract
+   committed `SOURCE_DIGEST_MISMATCH` without an adverse cause or semantic
+   mutation.
 
 This demonstrates that historical authentication can remain true while current
 reliance evolves.
@@ -185,8 +191,10 @@ reliance evolves.
    non-evidence node registration remains permissionless. Evidence must
    reference a verified authority whose origin contains the normalized source
    URI. The canonical ID is generated on-chain.
-3. A caller controlling both endpoints registers a typed dependency from an
-   earlier node to a later node. The edge assertor is stored on-chain.
+3. The controller of the child asserts a typed dependency from an earlier
+   parent node to a later child node. The parent must exist and satisfy graph
+   preconditions, but its publisher does not have to approve another party's
+   reliance. The edge assertor is stored on-chain.
 4. Any caller opens a revocation case against evidence with a verified notice
    authority, locked URI, digest, byte length, and reason code. Owners cannot
    suppress or erase cases.
@@ -279,17 +287,17 @@ protocol docs. The graph, blast-radius views, authentication/reliance split,
 immutable notice identity, active causes, and successor recovery read the
 bounded contract model rather than a frontend database.
 
-The release browser pass used Playwright against the local production build and
-the production alias across desktop, tablet, and mobile viewports. It covered
-94 production route/viewport assertions with zero console errors. Wallet QA
-uses a synthetic provider for safe browser behavior checks; signing with a
-real wallet remains an operator action and no test writes were broadcast by
-the release pass.
+The release browser pass uses Playwright against the local production build and
+the production alias across desktop, tablet, and mobile viewports. The V4 pass
+also covers provider wiring, lifecycle display, canonical impact, pagination,
+and explicit form validation. A real wallet write remains a controlled operator
+smoke against a completed case; no protocol changes are made by the frontend.
 
 ## Testing
 
-The recorded freeze gates are 28 direct tests, 5 invariant tests, 34
-adversarial tests, 2 property tests, and 34/34 security mutations killed.
+The recorded freeze gates are 55 direct tests, 5 invariant tests, 34
+adversarial tests, 2 property tests, and 46/49 security mutations killed,
+with 3 obsolete overflow-summary mutations retired and 0 survivors.
 These are engineering test results, not formal verification.
 
 ## Run locally

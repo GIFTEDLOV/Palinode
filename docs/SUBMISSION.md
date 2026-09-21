@@ -59,9 +59,14 @@ https://palinode-app.vercel.app
 
 https://github.com/GIFTEDLOV/Palinode
 
-## STUDIONET CONTRACT
+## STUDIONET CONTRACT (FROZEN V4)
 
-`0x9c9d1993cd938846D1163Bba9AA81AC6d165de88`
+`0x05243cB6db90EE210a22Aa3c16fdc4F893d7b13b`
+
+Source: `contracts/palinode_v2.py`<br>
+SHA-256: `0f23a120776b09be989e6112b34d27ae415e1808232be591f94d1e17d80c5601`<br>
+Release source commit: `14bb4574a8d248c978b55ff1fb70f32c0293f313`<br>
+Archived V1: `0x9c9d1993cd938846D1163Bba9AA81AC6d165de88`
 
 ## NETWORK
 
@@ -81,7 +86,7 @@ Studionet, chain ID `61999`.
 
 ## TECHNICAL ARCHITECTURE
 
-The canonical contract is `contracts/palinode.py`. The React/TypeScript/Vite
+The canonical contract is `contracts/palinode_v2.py`. The React/TypeScript/Vite
 frontend reads bounded pages from the frozen Studionet address. A narrow
 same-origin `/api/rpc` relay prevents browser CORS failures while forwarding to
 the documented Studionet RPC; it is not canonical state. GenLayer semantic
@@ -90,8 +95,9 @@ mutation.
 
 ## SECURITY / TESTING
 
-Recorded freeze gates: 28 direct tests, 5 invariant tests, 34 adversarial
-tests, 2 property tests, and 34/34 security mutations killed. See
+Recorded freeze gates: 55 direct tests, 5 invariant tests, 34 adversarial
+tests, 2 property tests, and 46/49 security mutations killed; 3 obsolete
+overflow-summary mutations were retired and 0 survived. See
 [SECURITY_AUDIT.md](SECURITY_AUDIT.md), [THREAT_MODEL.md](THREAT_MODEL.md),
 [TRUST_MODEL.md](TRUST_MODEL.md), and [CONTRACT_FREEZE.md](CONTRACT_FREEZE.md).
 These results do not constitute formal verification or a claim of perfect
@@ -104,7 +110,10 @@ The controlled Studionet proof authenticated Evidence V1 as `CLEARED`, produced
 Claim `QUESTIONED` and Decision `QUARANTINED`, independently authenticated
 Evidence V2, and finalized recovery as `CONCLUSIVE` / `SUPERSEDE` /
 `RECOVERY_RESOLVED_SUPERSEDE`. V1 authentication stayed `CLEARED` while its
-current reliance became `SUPERSEDED`.
+current reliance became `SUPERSEDED`. Reviewer closure additionally proved
+that Authority C can create a bounded third-party `QUESTION` challenge but
+cannot impersonate authoritative withdrawal, and that a same-URL byte change
+is rejected as `SOURCE_DIGEST_MISMATCH` before semantic adjudication.
 
 ## KNOWN LIMITATIONS
 

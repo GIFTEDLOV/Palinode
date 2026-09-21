@@ -19,4 +19,12 @@ describe('finality-safe transaction model', () => {
     expect(merged).toHaveLength(1);
     expect(merged[0].phase).toBe('FINALIZED SUCCESS');
   });
+
+  it('never evicts unresolved transactions when completed display history is bounded', () => {
+    const pending = Array.from({ length: 257 }, (_, index) => tx(`0xpending${index}` as `0x${string}`, 'PENDING'));
+    const completed = Array.from({ length: 40 }, (_, index) => tx(`0xcomplete${index}` as `0x${string}`, 'FINALIZED SUCCESS'));
+    const merged = mergeTrackedTransaction([], [...pending, ...completed]);
+    expect(merged.filter((item) => item.phase === 'PENDING')).toHaveLength(257);
+    expect(merged.filter((item) => item.phase === 'FINALIZED SUCCESS')).toHaveLength(20);
+  });
 });

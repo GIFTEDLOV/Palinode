@@ -23,15 +23,15 @@ export function NodeBadge({ node }: { node: NodeRecord }) { return <span classNa
 function navClass({ isActive }: { isActive: boolean }) { return isActive ? 'nav-link active' : 'nav-link'; }
 
 export function AppShell() {
-  const { address, chainId, connecting, connect, disconnect, error: walletError } = useWallet();
-  const { nodes, revocations, recoveries, loading, error, refresh } = useProtocol();
+  const { address, chainId, lastUsedAddress, connecting, connect, disconnect, error: walletError } = useWallet();
+  const { nodes, revocations, recoveries, loading, error, refresh, freshness, refreshedAt } = useProtocol();
   const { transactions, drawerOpen, setDrawerOpen } = useTransactions();
   const location = useLocation();
-  const activeTx = transactions.filter((tx) => !['FINALIZED SUCCESS', 'FINALIZED ERROR', 'UNDETERMINED'].includes(tx.phase));
+  const activeTx = transactions.filter((tx) => !['FINALIZED SUCCESS', 'FINALIZED ERROR', 'UNDETERMINED', 'CANCELED'].includes(tx.phase));
   return <div className="app-frame">
     <header className="topbar">
       <Link className="brand" to="/"><span className="brand-mark">P</span><span>PALINODE</span><small>REVOCATION GRAPH</small></Link>
-      <div className="topbar-right"><span className={`network-chip ${address && chainId !== CHAIN_ID ? 'wrong-network' : ''}`}><i />{address && chainId !== CHAIN_ID ? 'WRONG NETWORK' : `${NETWORK} / ${CHAIN_ID}`}</span><button className="wallet-button" onClick={address ? disconnect : () => void connect()}>{connecting ? 'CONNECTING…' : address ? truncate(address) : 'CONNECT WALLET'}</button><button className="icon-button" aria-label="Open transaction drawer" onClick={() => setDrawerOpen(true)}>◌<b>{activeTx.length || ''}</b></button></div>
+      <div className="topbar-right"><span className={`network-chip ${address && chainId !== CHAIN_ID ? 'wrong-network' : ''}`}><i />{address && chainId !== CHAIN_ID ? 'WRONG NETWORK' : `${NETWORK} / ${CHAIN_ID}`}</span><button className="wallet-button" onClick={address ? disconnect : () => void connect()}>{connecting ? 'CONNECTING…' : address ? truncate(address) : 'CONNECT WALLET'}</button>{!address && lastUsedAddress && <small className="wallet-last-used">LAST USED {truncate(lastUsedAddress)}</small>}<button className="icon-button" aria-label="Open transaction drawer" onClick={() => setDrawerOpen(true)}>◌<b>{activeTx.length || ''}</b></button></div>
     </header>
     <div className="app-layout">
       <aside className="sidebar">
@@ -54,7 +54,7 @@ export function AppShell() {
       <main className="main-content">
         {walletError && <div className="inline-alert warning">{walletError}</div>}
         {error && !loading && <ErrorState message={error} retry={() => void refresh(true)} />}
-        {location.pathname.startsWith('/app') && <div className="breadcrumb"><span>PALINODE</span><b>/</b><span>{location.pathname.split('/').filter(Boolean).slice(1).join(' / ') || 'overview'}</span>{loading && <em>SYNCING CANONICAL STATE…</em>}</div>}
+        {location.pathname.startsWith('/app') && <div className="breadcrumb"><span>PALINODE</span><b>/</b><span>{location.pathname.split('/').filter(Boolean).slice(1).join(' / ') || 'overview'}</span><em className={`freshness freshness-${freshness.toLowerCase()}`}>{freshness === 'LIVE' && refreshedAt ? `LIVE · refreshed ${formatDate(new Date(refreshedAt).toISOString())}` : freshness === 'CACHED' ? 'CACHED SNAPSHOT · refreshing' : freshness === 'RPC_UNAVAILABLE' ? 'RPC UNAVAILABLE · showing cached snapshot' : loading ? 'REFRESHING' : freshness}</em></div>}
         <Outlet />
       </main>
     </div>
@@ -67,22 +67,23 @@ export function TransactionDrawer({ onClose }: { onClose: () => void }) {
   return <div className="drawer-backdrop" onClick={onClose}><aside className="transaction-drawer" aria-label="Transaction drawer" onClick={(event) => event.stopPropagation()}><div className="drawer-header"><div><Kicker>FINALITY TRACKER</Kicker><h2>Transactions</h2></div><button className="icon-button" aria-label="Close transaction drawer" onClick={onClose}>×</button></div>{transactions.length === 0 ? <EmptyState title="No tracked transactions" body="Writes submitted from this browser will persist here and resume by ID after refresh." /> : <div className="tx-list">{transactions.map((tx) => <TransactionItem key={tx.id} tx={tx} />)}</div>}</aside></div>;
 }
 
-function TransactionItem({ tx }: { tx: import('./types').TrackedTransaction }) { return <div className="tx-item"><div className="tx-item-head"><strong>{tx.label}</strong><StatusPill value={tx.phase} /></div><div className="tx-method">{tx.method}</div><div className="tx-id mono">{truncate(tx.id, 14, 10)} <CopyButton value={tx.id} compact /></div><div className="tx-progress"><span className={tx.phase.includes('FINALIZED SUCCESS') ? 'done' : tx.phase.includes('ERROR') || tx.phase === 'UNDETERMINED' ? 'bad' : 'current'} /></div><div className="tx-meta"><span>{tx.protocolStatus}</span><span>{tx.executionResult}</span><span>{formatDate(tx.updatedAt)}</span></div>{tx.error && <div className="tx-error">{tx.error}</div>}</div>; }
+  function TransactionItem({ tx }: { tx: import('./types').TrackedTransaction }) { return <div className="tx-item"><div className="tx-item-head"><strong>{tx.label}</strong><StatusPill value={tx.phase} /></div><div className="tx-method">{tx.method}</div><div className="tx-id mono">{truncate(tx.id, 14, 10)} <CopyButton value={tx.id} compact /></div><div className="tx-progress"><span className={tx.phase.includes('FINALIZED SUCCESS') ? 'done' : tx.phase.includes('ERROR') || tx.phase === 'UNDETERMINED' || tx.phase === 'CANCELED' ? 'bad' : 'current'} /></div><div className="tx-meta"><span>STORED {tx.protocolStatus}</span><span>{tx.executionResult}</span><span>{formatDate(tx.updatedAt)}</span></div>{tx.resolutionAction === 'Finalize' && <div className="tx-action">FINALIZATION AVAILABLE · action=Finalize</div>}{tx.error && <div className="tx-error">{tx.error}</div>}</div>; }
 
-export function LiveContractStrip() { return <div className="live-strip"><span className="live-dot" /> LIVE CANONICAL STATE <span className="strip-divider" /> {NETWORK} <span className="strip-divider" /> <span className="mono">{truncate(CONTRACT_ADDRESS, 10, 8)}</span> <span className="strip-divider" /> <span className="mono">SHA {truncate(CONTRACT_SHA256, 8, 6)}</span></div>; }
+export function LiveContractStrip() { const { freshness, refreshedAt } = useProtocol(); return <div className="live-strip"><span className="live-dot" /> {freshness === 'LIVE' ? 'LIVE CANONICAL STATE' : freshness === 'CACHED' ? 'CACHED SNAPSHOT' : freshness === 'RPC_UNAVAILABLE' ? 'RPC UNAVAILABLE' : 'REFRESHING'} <span className="strip-divider" /> {NETWORK} <span className="strip-divider" /> <span className="mono">{truncate(CONTRACT_ADDRESS, 10, 8)}</span> <span className="strip-divider" /> <span className="mono">SHA {truncate(CONTRACT_SHA256, 8, 6)}</span>{refreshedAt && <small>READ {formatDate(new Date(refreshedAt).toISOString())}</small>}</div>; }
 
-export function WriteAction({ label, method, args, children, className = 'button button-primary', onSubmitted }: { label: string; method: string; args: CalldataEncodable[]; children: React.ReactNode; className?: string; onSubmitted?: () => void }) {
+export function WriteAction({ label, method, args, children, className = 'button button-primary', onSubmitted, validationError }: { label: string; method: string; args: CalldataEncodable[]; children: React.ReactNode; className?: string; onSubmitted?: () => void; validationError?: string | null }) {
   const { address, chainId, connect } = useWallet();
   const { submit, setDrawerOpen } = useTransactions();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const run = async () => {
+    if (validationError) { setError(validationError); return; }
     setBusy(true); setError(null);
     try { const connectedAddress = address || await connect(); if (!connectedAddress) throw new Error('Connect a wallet before sending a write.'); if (chainId !== null && chainId !== CHAIN_ID) throw new Error(`Switch wallet to ${NETWORK} (chain ${CHAIN_ID}) before sending a write.`); await submit(label, method, args, connectedAddress); onSubmitted?.(); setDrawerOpen(true); }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Write was not submitted.'); }
     finally { setBusy(false); }
   };
-  return <span className="action-wrap"><button type="button" className={className} disabled={busy} onClick={() => void run()}>{busy ? 'SUBMITTING…' : children}</button>{error && <small className="field-error">{error}</small>}</span>;
+  return <span className="action-wrap"><button type="button" className={className} disabled={busy || Boolean(validationError)} onClick={() => void run()}>{busy ? 'SUBMITTING…' : children}</button>{(error || validationError) && <small className="field-error">{error || validationError}</small>}</span>;
 }
 
 export function NodeRow({ node, onSelect }: { node: NodeRecord; onSelect?: () => void }) { return <button className="node-row" onClick={onSelect}><div><NodeBadge node={node} /><strong>{node.title}</strong><small>{node.subject_id || 'No subject identifier'}</small></div><div className="node-row-status"><StatusPill value={node.authentication_status} label={`AUTH ${formatStatus(node.authentication_status)}`} /><StatusPill value={node.reliance_status} label={formatStatus(node.reliance_status)} /><span className="mono">{truncate(node.node_id)}</span></div></button>; }

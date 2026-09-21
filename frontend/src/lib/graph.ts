@@ -25,3 +25,28 @@ export function downstreamOf(root: string, nodes: NodeRecord[], edges: EdgeRecor
   }
   return results;
 }
+
+export type CanonicalImpact = {
+  node: NodeRecord;
+  distance: number;
+  edge: EdgeRecord;
+  caseId: string;
+  causeId: string;
+  effect: string;
+};
+
+/**
+ * Canonical impact is deliberately narrower than graph reachability.  A node
+ * is affected only when the contract's individually keyed cause mapping names
+ * this case; a reachable CORROBORATES/CONTRADICTS node remains related only.
+ */
+export function canonicalImpactFromCauses(root: string, caseId: string, nodes: NodeRecord[], edges: EdgeRecord[], causeSlots: Record<string, string[]>) {
+  const reachable = downstreamOf(root, nodes, edges);
+  return reachable.flatMap(({ node, distance, edge }) => {
+    const matching = (causeSlots[node.node_id] || []).filter((slot) => slot.startsWith(`${caseId}|`));
+    return matching.map((slot) => {
+      const [, effect = 'UNKNOWN'] = slot.split('|');
+      return { node, distance, edge, caseId, causeId: caseId, effect } satisfies CanonicalImpact;
+    });
+  });
+}

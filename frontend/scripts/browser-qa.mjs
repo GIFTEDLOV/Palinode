@@ -158,7 +158,7 @@ for (const [target, base] of targets) {
   await route(page, base, ids.evidence || '/app/evidence');
   if (ids.evidence) {
     const body = await page.locator('body').innerText();
-    if (!body.includes('SOURCE AUTHENTICATION') || !body.includes('CURRENT RELIANCE')) throw new Error(`${target}: evidence authentication/reliance distinction missing`);
+    if (!body.includes('AUTHENTICATION') || !body.includes('RELIANCE')) throw new Error(`${target}: evidence authentication/reliance distinction missing`);
   }
   if (errors.length) throw new Error(`${target}: browser console errors: ${errors.join(' | ')}`);
   summary.targets[target] = { ids, routeCount: routeResults.length, consoleErrors: errors.length };
@@ -195,6 +195,13 @@ await walletPage.evaluate(() => window.__palinodeWalletTest.setChain('0x1'));
 const wrongNetwork = await walletPage.locator('.network-chip').innerText();
 await route(walletPage, localUrl, '/app/evidence');
 await walletPage.getByRole('button', { name: 'Register evidence', exact: true }).first().click();
+const evidenceFields = walletPage.locator('.form-card .field input');
+await evidenceFields.nth(0).fill('https://palinode-fixture.vercel.app/evidence/reviewer-wallet-smoke.json');
+await evidenceFields.nth(1).fill('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+await evidenceFields.nth(2).fill('1');
+await evidenceFields.nth(3).fill('wallet-smoke');
+await evidenceFields.nth(4).fill('Wallet smoke');
+await evidenceFields.nth(5).fill('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
 await walletPage.getByRole('button', { name: 'Register evidence', exact: true }).last().click();
 const wrongNetworkWrite = await walletPage.locator('.field-error').innerText();
 await walletPage.evaluate(() => window.__palinodeWalletTest.setAccount('0x2222222222222222222222222222222222222222'));

@@ -13,6 +13,14 @@ export type NodeRecord = RawRecord & {
   assessment_status: AuthStatus;
   status: RelianceStatus;
   source_uri: string;
+  content_sha256?: string;
+  byte_length?: string;
+  authority_id?: string;
+  authority_version?: string;
+  authority_version_id?: string;
+  creator?: string;
+  successor_evidence_id?: string;
+  predecessor_evidence_id?: string;
 };
 
 export type EdgeRecord = RawRecord & {
@@ -22,6 +30,19 @@ export type EdgeRecord = RawRecord & {
   relationship: Relationship;
   creation_sequence: string;
   active: string;
+  assertor?: string;
+};
+
+export type AuthorityVersionRecord = RawRecord & {
+  authority_version_id?: string;
+  authority_id?: string;
+  version?: string;
+  controller?: string;
+  origin?: string;
+  policy?: string;
+  nonce?: string;
+  status?: string;
+  challenge_uri?: string;
 };
 
 export type AuthorityRecord = RawRecord & {
@@ -31,6 +52,23 @@ export type AuthorityRecord = RawRecord & {
   current_version: string;
   status: string;
   verification_policy: string;
+  challenge_nonce?: string;
+  challenge_uri?: string;
+};
+
+export type CauseSummary = RawRecord & {
+  active_count?: string;
+  invalidated_count?: string;
+  quarantined_count?: string;
+  questioned_count?: string;
+  under_review_count?: string;
+};
+
+export type CausePage = RawRecord & {
+  count?: string;
+  cursor?: string;
+  next_cursor?: string;
+  [key: `slot_${number}`]: string | undefined;
 };
 
 export type RevocationCase = RawRecord & {
@@ -41,10 +79,16 @@ export type RevocationCase = RawRecord & {
   materiality: string;
   root_effect: string;
   reason_code: string;
+  notice_kind?: string;
   notice_uri: string;
   notice_sha256: string;
+  notice_byte_length?: string;
+  notice_authority_id?: string;
+  notice_authority_version?: string;
   target_reliance_status: string;
   target_authentication_status: string;
+  semantic_verdict?: string;
+  assessment_count?: string;
 };
 
 export type RecoveryCase = RawRecord & {
@@ -75,9 +119,32 @@ export type ProtocolSnapshot = {
   loading: boolean;
   error: string | null;
   refreshedAt: number | null;
+  freshness: 'LIVE' | 'CACHED' | 'REFRESHING' | 'RPC_UNAVAILABLE';
 };
 
-export type LifecyclePhase = 'SUBMITTED' | 'PENDING' | 'PROPOSING' | 'COMMITTING' | 'REVEALING' | 'ACCEPTED / PROVISIONAL' | 'APPEAL PERIOD' | 'FINALIZATION AVAILABLE' | 'FINALIZED SUCCESS' | 'FINALIZED ERROR' | 'UNDETERMINED' | 'TIMEOUT';
+export type LifecycleStatus =
+  | 'SUBMITTED' | 'PENDING' | 'PROPOSING' | 'COMMITTING' | 'REVEALING'
+  | 'ACCEPTED' | 'UNDETERMINED' | 'FINALIZED' | 'CANCELED'
+  | 'APPEAL_REVEALING' | 'APPEAL_COMMITTING' | 'VALIDATORS_TIMEOUT'
+  | 'LEADER_TIMEOUT' | 'LEADER_REVEALING';
+
+export type LifecyclePhase =
+  | LifecycleStatus
+  | 'FINALIZED SUCCESS'
+  | 'FINALIZED ERROR'
+  | 'ACCEPTED / PROVISIONAL'
+  | 'FINALIZATION AVAILABLE'
+  | 'APPEAL PERIOD'
+  | 'TIMEOUT';
+
+export type TransactionLifecycle = {
+  storedStatus?: string;
+  projectedStatus?: string;
+  resolutionAction?: string;
+  resolutionSource?: string;
+  decisionId?: string | null;
+  decisionActive?: boolean;
+};
 
 export type TrackedTransaction = {
   id: `0x${string}`;
@@ -86,6 +153,8 @@ export type TrackedTransaction = {
   args: unknown[];
   phase: LifecyclePhase;
   protocolStatus: string;
+  projectedStatus?: string;
+  resolutionAction?: string;
   executionResult: string;
   result: string;
   submittedAt: string;
