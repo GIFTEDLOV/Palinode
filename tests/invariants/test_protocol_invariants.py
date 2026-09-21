@@ -6,7 +6,7 @@ import re
 import pytest
 
 
-CONTRACT = os.environ.get("PALINODE_CONTRACT", "contracts/palinode.py")
+CONTRACT = os.environ.get("PALINODE_CONTRACT", "contracts/palinode_v2.py")
 AUTHORITY_POLICY = "WELL_KNOWN_ADDRESS_NONCE_V1"
 
 

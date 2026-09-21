@@ -105,7 +105,9 @@ target evidence or notice during reassessment.
 Notice URLs must reference a verified, currently active source authority. An
 authoritative notice must use the same authority lineage as the target
 evidence; an unrelated verified authority is explicitly a third-party
-challenge and cannot yield `MATERIAL`/`INVALIDATE`. The source authority
+challenge and may yield `MATERIAL`/`QUESTION` with
+`MATERIAL_THIRD_PARTY_CHALLENGE`, but cannot impersonate withdrawal or yield
+`MATERIAL`/`INVALIDATE`. The source authority
 registry uses a consensus-checked canonical
 `https://origin/.well-known/palinode.json` document binding the registering
 address, origin, policy, and nonce. A case locks the notice authority version

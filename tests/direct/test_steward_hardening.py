@@ -6,7 +6,7 @@ import re
 import pytest
 
 
-CONTRACT = os.environ.get("PALINODE_CONTRACT", "contracts/palinode.py")
+CONTRACT = os.environ.get("PALINODE_CONTRACT", "contracts/palinode_v2.py")
 EVIDENCE_ORIGIN = "https://evidence.example"
 NOTICE_ORIGIN = "https://notice.example"
 EVIDENCE_URI = EVIDENCE_ORIGIN + "/e-1"
@@ -208,14 +208,19 @@ def test_domain_control_challenge_rejects_wrong_address_or_nonce(direct_vm, dire
 
 def test_duplicate_and_different_notices_are_independent(direct_vm, direct_deploy):
     contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
-    evidence_authority, notice_authority = authorities(contract, direct_vm, "repeated")
+    evidence_authority, _notice_authority = authorities(contract, direct_vm, "repeated")
+    notice_authority = evidence_authority
     evidence_id = evidence(contract, evidence_authority)
+    direct_vm.mock_web(re.escape(EVIDENCE_URI), {"status": 200, "body": EVIDENCE_BODY})
+    contract.authenticate_evidence(evidence_id)
+    direct_vm.clear_mocks()
     first_notice = b"First correction notice"
     first_case = open_case(
         contract,
         evidence_authority,
         notice_authority,
         evidence_id,
+        notice_uri=EVIDENCE_ORIGIN + "/n-1",
         notice_body=first_notice,
     )
     with direct_vm.expect_revert("duplicate revocation case"):
@@ -224,6 +229,7 @@ def test_duplicate_and_different_notices_are_independent(direct_vm, direct_deplo
             evidence_authority,
             notice_authority,
             evidence_id,
+            notice_uri=EVIDENCE_ORIGIN + "/n-1",
             notice_body=first_notice,
         )
     second_notice = b"Second independently submitted notice"
@@ -232,19 +238,19 @@ def test_duplicate_and_different_notices_are_independent(direct_vm, direct_deplo
         evidence_authority,
         notice_authority,
         evidence_id,
-        notice_uri=NOTICE_ORIGIN + "/n-2",
+        notice_uri=EVIDENCE_ORIGIN + "/n-2",
         notice_body=second_notice,
     )
     assert first_case != second_case
     assert contract.get_revocation_case(first_case)["notice_sha256"] != contract.get_revocation_case(second_case)["notice_sha256"]
-    mock_semantic(direct_vm, EVIDENCE_URI, NOTICE_URI, first_notice, immaterial_result())
+    mock_semantic(direct_vm, EVIDENCE_URI, EVIDENCE_ORIGIN + "/n-1", first_notice, immaterial_result())
     contract.assess_revocation(first_case)
     direct_vm.clear_mocks()
-    mock_semantic(direct_vm, EVIDENCE_URI, NOTICE_ORIGIN + "/n-2", second_notice, material_result())
+    mock_semantic(direct_vm, EVIDENCE_URI, EVIDENCE_ORIGIN + "/n-2", second_notice, material_result())
     contract.assess_revocation(second_case)
     assert contract.get_revocation_case(first_case)["case_status"] == "COMPLETE"
     assert contract.get_revocation_case(second_case)["case_status"] == "COMPLETE"
-    assert contract.get_node_record(evidence_id)["assessment_status"] == "UNASSESSED"
+    assert contract.get_node_record(evidence_id)["assessment_status"] == "CLEARED"
 
 
 def test_reassessment_uses_locked_case_identity_not_caller_substitution(direct_vm, direct_deploy):
@@ -252,6 +258,9 @@ def test_reassessment_uses_locked_case_identity_not_caller_substitution(direct_v
     evidence_authority, notice_authority = authorities(contract, direct_vm, "locked")
     evidence_id = evidence(contract, evidence_authority)
     notice_body = b"Locked notice"
+    direct_vm.mock_web(re.escape(EVIDENCE_URI), {"status": 200, "body": EVIDENCE_BODY})
+    contract.authenticate_evidence(evidence_id)
+    direct_vm.clear_mocks()
     case_id = open_case(contract, evidence_authority, notice_authority, evidence_id, notice_body=notice_body)
     before = contract.get_revocation_case(case_id)
     with pytest.raises(TypeError):
@@ -309,6 +318,9 @@ def test_mirror_mismatch_cannot_rewrite_locked_identity(direct_vm, direct_deploy
     contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
     evidence_authority, notice_authority = authorities(contract, direct_vm, "mirror-mismatch")
     evidence_id = evidence(contract, evidence_authority)
+    direct_vm.mock_web(re.escape(EVIDENCE_URI), {"status": 200, "body": EVIDENCE_BODY})
+    contract.authenticate_evidence(evidence_id)
+    direct_vm.clear_mocks()
     notice_body = b"Mismatch notice"
     case_id = open_case(contract, evidence_authority, notice_authority, evidence_id, notice_body=notice_body)
     contract.assess_revocation(case_id)
@@ -423,7 +435,7 @@ def test_authority_versions_rotate_from_domain_declaration_and_preserve_history(
     rotated = contract.get_source_authority(authority_id)
     assert rotated["current_version"] == "2"
     assert rotated["authority_address"] == new_controller
-    assert contract.get_source_authority_version(authority_id, 1)["status"] == "REVOKED"
+    assert contract.get_source_authority_version(authority_id, 1)["status"] == "SUPERSEDED"
     assert contract.get_node_record(evidence_id)["authority_version"] == "1"
     with direct_vm.expect_revert("authority rotation was not verified"):
         contract.rotate_source_authority(authority_id, "old-controller-attempt")

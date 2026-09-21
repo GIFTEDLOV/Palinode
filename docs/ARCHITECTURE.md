@@ -72,7 +72,8 @@ irreversible messages, or multiple Intelligent Contracts in Phase 1.
 
 An old evidence object is never edited into a replacement. A replacement is a
 new immutable evidence object. `link_evidence_successor` records explicit
-lineage and may move the old object to `SUPERSEDED`; its original URI, digest,
+lineage but never changes reliance; only a successful cause-bound recovery may
+move the old object to `SUPERSEDED`; its original URI, digest,
 length, sequence, creator, and history remain inspectable. A recovery case
 then binds one material adverse case to that successor. Consensus decides only
 whether the specific defect is resolved; deterministic code resolves that

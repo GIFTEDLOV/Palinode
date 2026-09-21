@@ -6,7 +6,7 @@ import re
 import pytest
 
 
-CONTRACT = os.environ.get("PALINODE_CONTRACT", "contracts/palinode.py")
+CONTRACT = os.environ.get("PALINODE_CONTRACT", "contracts/palinode_v2.py")
 EVIDENCE_URI = "https://evidence.example/e-1"
 EVIDENCE_ORIGIN = "https://evidence.example"
 AUTHORITY_POLICY = "WELL_KNOWN_ADDRESS_NONCE_V1"
@@ -170,8 +170,11 @@ def test_lineage_preserves_old_evidence_and_marks_successor(direct_vm, direct_de
         title="Replacement",
         authority_id=authority_id,
     )
+    direct_vm.mock_web(re.escape("https://evidence.example/e-2"), {"status": 200, "body": new_body})
+    contract.authenticate_evidence(new_id)
+    direct_vm.clear_mocks()
     contract.link_evidence_successor(old_id, new_id)
-    assert contract.get_node_record(old_id)["status"] == "SUPERSEDED"
+    assert contract.get_node_record(old_id)["status"] == "ACTIVE"
     assert contract.get_node_record(old_id)["content_sha256"] == digest(old_body)
     assert contract.get_node_record(new_id)["status"] == "ACTIVE"
     with direct_vm.expect_revert("successor already recorded"):

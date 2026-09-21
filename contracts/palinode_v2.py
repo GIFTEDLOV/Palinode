@@ -33,7 +33,11 @@ MAX_AUTHORITY_POLICY_LENGTH = 64
 MAX_AUTHORITY_CHALLENGE_BYTES = 16_384
 MAX_SEMANTIC_FETCH_BYTES = 65_536
 MAX_DECLARED_SOURCE_BYTES = MAX_SEMANTIC_FETCH_BYTES
-MAX_OUTGOING_EDGES = 64
+# A parent may be cited by many independently controlled child records.  A
+# lifetime outgoing-edge cap would let unrelated child owners exhaust a
+# publisher's capacity.  Outgoing propagation is bounded per transaction and
+# edge enumeration is paginated; incoming fan-in remains bounded because the
+# child controller owns that declaration surface.
 MAX_INCOMING_EDGES = 64
 MAX_IMPACT_STEPS_PER_CALL = 32
 MAX_RECOVERY_STEPS_PER_CALL = 32
@@ -211,6 +215,7 @@ SEMANTIC_REASON_CODES = (
     "MATERIAL_COMPROMISE",
     "MATERIAL_INVALIDATION",
     "MATERIAL_REVOCATION",
+    "MATERIAL_THIRD_PARTY_CHALLENGE",
     "IMMATERIAL_CORRECTION",
     "NO_AUTHENTIC_CHANGE",
     "DIFFERENT_SUBJECT",
@@ -1134,7 +1139,8 @@ original_evidence_affected (boolean), materiality (MATERIAL, IMMATERIAL, or
 INCONCLUSIVE), root_effect (INVALIDATE, QUESTION, NO_CHANGE, or INCONCLUSIVE),
 reason_code (one of MATERIAL_CORRECTION, MATERIAL_WITHDRAWAL,
 MATERIAL_SUPERSESSION, MATERIAL_COMPROMISE, MATERIAL_INVALIDATION,
-MATERIAL_REVOCATION, IMMATERIAL_CORRECTION, NO_AUTHENTIC_CHANGE,
+MATERIAL_REVOCATION, MATERIAL_THIRD_PARTY_CHALLENGE, IMMATERIAL_CORRECTION,
+NO_AUTHENTIC_CHANGE,
 DIFFERENT_SUBJECT, NOT_ORIGINAL_EVIDENCE, or SEMANTIC_INCONCLUSIVE).
 
 Output JSON only. Use exactly the keys and enum values specified above. Do not
@@ -1149,7 +1155,9 @@ INCONCLUSIVE, and the matching explicit failure reason. Never use RETRYABLE
 for a malformed response. MATERIAL requires an authentic change, the same
 subject, and an effect on the original evidence. MATERIAL must use INVALIDATE
 or QUESTION and a MATERIAL_* reason code. An unrelated third-party challenge
-may only produce QUESTION, never INVALIDATE. IMMATERIAL must use NO_CHANGE.
+may only produce QUESTION with MATERIAL_THIRD_PARTY_CHALLENGE; it may never
+produce INVALIDATE or a publisher-withdrawal reason. IMMATERIAL must use
+NO_CHANGE.
 Ambiguity must use INCONCLUSIVE and SEMANTIC_INCONCLUSIVE. Do not return
 prose or extra keys.
 
@@ -2071,11 +2079,10 @@ class Palinode(gl.Contract):
             self.node_sequence[parent_node_id] < self.node_sequence[child_node_id],
             "edge must point from earlier node to later node",
         )
-        # An edge changes both endpoint capacity and future reliance.  A
-        # caller must control both endpoints; this intentionally rejects
-        # cross-owner one-sided assertions instead of silently making a
-        # canonical dependency from an unaccepted proposal.
-        self._require_node_controller(parent_node_id)
+        # The child declares what it relies on.  Parent ownership is not
+        # required: independently controlled consumers must be able to cite
+        # public evidence and claims.  The child controller is the canonical
+        # edge assertor and is therefore the only endpoint controller required.
         self._require_node_controller(child_node_id)
         self._require(
             self.node_status[parent_node_id] != STATUS_SUPERSEDED,
@@ -2089,10 +2096,6 @@ class Palinode(gl.Contract):
         self._require(
             len(active_causes) <= MAX_EDGE_RECONCILIATION_CAUSES,
             "parent has too many active causes to reconcile",
-        )
-        self._require(
-            self.outgoing_count[parent_node_id] < u256(MAX_OUTGOING_EDGES),
-            "outgoing dependency limit reached",
         )
         self._require(
             self.incoming_count[child_node_id] < u256(MAX_INCOMING_EDGES),
@@ -2555,12 +2558,16 @@ class Palinode(gl.Contract):
 
     def _decrement_cause_counter(self, node_id: str, status: str) -> None:
         if status == STATUS_QUESTIONED:
+            self._require(self.node_active_questioned_count[node_id] > u256(0), "questioned cause counter underflow")
             self.node_active_questioned_count[node_id] = self.node_active_questioned_count[node_id] - u256(1)
         elif status == STATUS_UNDER_REVIEW:
+            self._require(self.node_active_under_review_count[node_id] > u256(0), "under-review cause counter underflow")
             self.node_active_under_review_count[node_id] = self.node_active_under_review_count[node_id] - u256(1)
         elif status == STATUS_QUARANTINED:
+            self._require(self.node_active_quarantined_count[node_id] > u256(0), "quarantined cause counter underflow")
             self.node_active_quarantined_count[node_id] = self.node_active_quarantined_count[node_id] - u256(1)
         elif status == STATUS_INVALIDATED:
+            self._require(self.node_active_invalidated_count[node_id] > u256(0), "invalidated cause counter underflow")
             self.node_active_invalidated_count[node_id] = self.node_active_invalidated_count[node_id] - u256(1)
         else:
             self._require(False, "invalid active cause counter status")
@@ -2582,9 +2589,14 @@ class Palinode(gl.Contract):
         for index in range(len(causes)):
             if causes[index] == case_id:
                 previous = self.node_active_cause_effect[cause_key]
+                self._require(
+                    previous in (STATUS_QUESTIONED, STATUS_UNDER_REVIEW, STATUS_QUARANTINED, STATUS_INVALIDATED),
+                    "active cause mapping is inconsistent",
+                )
                 if self._ordinary_severity(target_status) > self._ordinary_severity(previous):
                     self._decrement_cause_counter(node_id, previous)
                     self.node_active_cause_effect[cause_key] = target_status
+                    self.node_active_cause_root_effect[cause_key] = root_effect
                     self._increment_cause_counter(node_id, target_status)
                 return
         causes.append(case_id)
@@ -2629,18 +2641,24 @@ class Palinode(gl.Contract):
         cause_key = node_id + "|" + adverse_case_id
         self._require(cause_key in self.node_active_cause_effect, "active adverse cause does not exist")
         previous_status = self.node_active_cause_effect[cause_key]
-        self._require(previous_status != "", "active adverse cause does not exist")
+        self._require(
+            previous_status in (STATUS_QUESTIONED, STATUS_UNDER_REVIEW, STATUS_QUARANTINED, STATUS_INVALIDATED),
+            "active cause mapping is inconsistent",
+        )
         self._decrement_cause_counter(node_id, previous_status)
         self.node_active_cause_effect[cause_key] = ""
         self.node_active_cause_root_effect[cause_key] = ""
         causes = self.node_active_cause_ids[node_id]
+        found = False
         for index in range(len(causes)):
             if causes[index] == adverse_case_id:
+                found = True
                 last_index = len(causes) - 1
                 if index != last_index:
                     causes[index] = causes[last_index]
                 causes.pop()
                 break
+        self._require(found, "active cause mapping is inconsistent")
         if self._highest_active_cause_status(node_id) == "" and recovery_effect == RECOVERY_EFFECT_SUPERSEDE:
             current = self.node_status[node_id]
             if current != STATUS_SUPERSEDED:
@@ -2825,12 +2843,18 @@ class Palinode(gl.Contract):
         result = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
         self._require(self._validate_semantic_result(result), "semantic result rejected")
         semantic_result = cast(dict[str, object], result)
-        if (
-            notice_kind == NOTICE_CHALLENGE
-            and semantic_result["materiality"] == VERDICT_MATERIAL
-            and semantic_result["root_effect"] == ROOT_INVALIDATE
-        ):
-            self._require(False, "third-party challenge cannot invalidate evidence")
+        if notice_kind == NOTICE_CHALLENGE and semantic_result["materiality"] == VERDICT_MATERIAL:
+            # A third-party challenge can materially undermine reliance, but it
+            # cannot impersonate a publisher withdrawal.  Its only adverse
+            # canonical effect is QUESTION with a dedicated reason code.
+            self._require(
+                semantic_result["root_effect"] == ROOT_QUESTION,
+                "third-party challenge can only question evidence",
+            )
+            self._require(
+                semantic_result["reason_code"] == "MATERIAL_THIRD_PARTY_CHALLENGE",
+                "third-party challenge requires challenge reason",
+            )
         if semantic_result["result_status"] == RESULT_CONCLUSIVE:
             self.case_assessment_count[case_id] = self.case_assessment_count[case_id] + u256(1)
         self._commit_semantic_result(case_id, semantic_result)

@@ -85,6 +85,27 @@
         "$dict": "string"
       }
     },
+    "get_active_causes_page": {
+      "params": [
+        [
+          "node_id",
+          "string"
+        ],
+        [
+          "cursor",
+          "int"
+        ],
+        [
+          "limit",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": {
+        "$dict": "string"
+      }
+    },
     "get_assessment_history": {
       "params": [
         [
@@ -124,6 +145,19 @@
         [
           "limit",
           "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": {
+        "$dict": "string"
+      }
+    },
+    "get_case_result_history": {
+      "params": [
+        [
+          "case_id",
+          "string"
         ]
       ],
       "kwparams": {},
@@ -176,6 +210,19 @@
           "$rep": "string"
         }
       ]
+    },
+    "get_evidence_successor_link": {
+      "params": [
+        [
+          "old_evidence_id",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": {
+        "$dict": "string"
+      }
     },
     "get_impact_queue_state": {
       "params": [
@@ -278,6 +325,19 @@
         "$dict": "string"
       }
     },
+    "get_recovery_result_history": {
+      "params": [
+        [
+          "recovery_id",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": {
+        "$dict": "string"
+      }
+    },
     "get_recovery_retry_telemetry": {
       "params": [
         [
@@ -338,6 +398,27 @@
         ],
         [
           "version",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": {
+        "$dict": "string"
+      }
+    },
+    "get_source_authority_versions_page": {
+      "params": [
+        [
+          "authority_id",
+          "string"
+        ],
+        [
+          "cursor",
+          "int"
+        ],
+        [
+          "limit",
           "int"
         ]
       ],

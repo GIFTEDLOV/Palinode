@@ -12,10 +12,8 @@ alias: studionet
 
 The repository does not target `studio-dev`, chain ID `61997`, or Bradbury.
 The checked-in `gltest.config.yaml` selects the built-in `studionet` profile.
-One controlled canary deployment was broadcast only after the measured
-gasless Studionet preflight and local gates passed. It finalized successfully;
-the semantic-closure result is recorded separately under
-`evidence/studionet/canary-v2/`.
+This review is pre-deployment. No V4 deployment or broadcast is authorized by
+this document; the archived canary records remain historical evidence only.
 
 ## Resolved versions
 
@@ -51,12 +49,15 @@ The current stable linter commands are:
 
 ```powershell
 $env:GENVM_VERSION = "v0.2.16"
-.venv\Scripts\genvm-lint.exe check contracts/palinode.py --json
-.venv\Scripts\genvm-lint.exe typecheck contracts/palinode.py --json
-.venv\Scripts\genvm-lint.exe schema contracts/palinode.py --output artifacts/palinode_schema.json --json
+.venv\Scripts\genvm-lint.exe lint contracts/palinode_v2.py
+.venv\Scripts\genvm-lint.exe validate contracts/palinode_v2.py
+.venv\Scripts\genvm-lint.exe typecheck contracts/palinode_v2.py
+.venv\Scripts\genvm-lint.exe schema contracts/palinode_v2.py
 ```
 
-The final checked schema reports 41 public methods: 21 writes and 20 views.
+The v2 schema reports 46 public methods: 21 writes and 25 views. The same
+stable runner and gates are also checked against `contracts/palinode.py` for
+the exact pinned dependency restoration; the v1 schema remains 41 methods.
 The explicit `GENVM_VERSION` environment variable prevents the linter resolver
 from silently selecting a cached release-candidate runtime.
 

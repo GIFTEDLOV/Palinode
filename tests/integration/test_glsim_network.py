@@ -83,7 +83,7 @@ def test_glsim_deploy_schema_and_deterministic_readback(glsim_url):
         deployed = _rpc(
             glsim_url,
             "sim_deploy",
-            {"code_path": "contracts/palinode.py", "sender": "0x" + "1" * 40},
+            {"code_path": "contracts/palinode_v2.py", "sender": "0x" + "1" * 40},
         )
     except Exception as exc:
         message = str(exc)

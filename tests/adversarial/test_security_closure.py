@@ -6,7 +6,7 @@ import re
 import pytest
 
 
-CONTRACT = os.environ.get("PALINODE_CONTRACT", "contracts/palinode.py")
+CONTRACT = os.environ.get("PALINODE_CONTRACT", "contracts/palinode_v2.py")
 POLICY = "WELL_KNOWN_ADDRESS_NONCE_V1"
 EVIDENCE_ORIGIN = "https://evidence.example"
 NOTICE_ORIGIN = "https://notice.example"
@@ -43,7 +43,17 @@ def evidence(contract, authority_id, uri=EVIDENCE_URI, body=EVIDENCE_BODY):
     return contract.register_evidence(uri, digest(body), len(body), "adversarial", "Adversarial evidence", authority_id)
 
 
-def open_case(contract, evidence_id, notice_authority, uri=NOTICE_URI, body=b"adverse notice", reason="CORRECTED"):
+def same_lineage_notice_uri(uri):
+    return EVIDENCE_ORIGIN + "/notice" + uri[len(NOTICE_ORIGIN):]
+
+
+def open_case(contract, direct_vm, evidence_id, notice_authority, uri=NOTICE_URI, body=b"adverse notice", reason="CORRECTED"):
+    record = contract.get_node_record(evidence_id)
+    direct_vm.mock_web(re.escape(record["source_uri"]), {"status": 200, "body": EVIDENCE_BODY})
+    contract.authenticate_evidence(evidence_id)
+    direct_vm.clear_mocks()
+    if notice_authority == record["authority_id"] and uri.startswith(NOTICE_ORIGIN):
+        uri = same_lineage_notice_uri(uri)
     return contract.open_revocation_case(
         evidence_id,
         notice_authority,
@@ -58,6 +68,11 @@ def open_case(contract, evidence_id, notice_authority, uri=NOTICE_URI, body=b"ad
 def semantic_sources(direct_vm, evidence_uri, notice_uri, notice_body, result):
     direct_vm.mock_web(re.escape(evidence_uri), {"status": 200, "body": EVIDENCE_BODY})
     direct_vm.mock_web(re.escape(notice_uri), {"status": 200, "body": notice_body})
+    if notice_uri.startswith(NOTICE_ORIGIN):
+        direct_vm.mock_web(
+            re.escape(same_lineage_notice_uri(notice_uri)),
+            {"status": 200, "body": notice_body},
+        )
     direct_vm.mock_llm(r"PALINODE semantic adjudicator", json.dumps(result))
 
 
@@ -129,7 +144,7 @@ def test_case_id_and_notice_identity_are_locked_on_reassessment(direct_vm, direc
     na = authority(contract, direct_vm, NOTICE_ORIGIN, "case-lock-n")
     evidence_id = evidence(contract, ea)
     notice = b"locked notice"
-    case_id = open_case(contract, evidence_id, na, body=notice)
+    case_id = open_case(contract, direct_vm, evidence_id, na, body=notice)
     direct_vm.mock_web(re.escape(EVIDENCE_URI), {"status": 200, "body": EVIDENCE_BODY})
     direct_vm.mock_web(re.escape(NOTICE_URI), {"status": 200, "body": notice})
     direct_vm.mock_llm(r"PALINODE semantic adjudicator", json.dumps(immaterial()))
@@ -146,23 +161,23 @@ def test_case_id_and_notice_identity_are_locked_on_reassessment(direct_vm, direc
 def test_cross_case_severity_is_monotonic_and_order_safe(direct_vm, direct_deploy):
     contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
     ea = authority(contract, direct_vm, EVIDENCE_ORIGIN, "composition-e")
-    na = authority(contract, direct_vm, NOTICE_ORIGIN, "composition-n")
+    na = ea
     evidence_id = evidence(contract, ea)
     first_body = b"material notice"
-    first = open_case(contract, evidence_id, na, body=first_body)
+    first = open_case(contract, direct_vm, evidence_id, na, body=first_body)
     semantic_sources(direct_vm, EVIDENCE_URI, NOTICE_URI, first_body, material())
     contract.assess_revocation(first)
     assert contract.get_node_record(evidence_id)["status"] == "INVALIDATED"
 
     second_body = b"immaterial later notice"
-    second = open_case(contract, evidence_id, na, uri=NOTICE_ORIGIN + "/n-2", body=second_body)
+    second = open_case(contract, direct_vm, evidence_id, na, uri=NOTICE_ORIGIN + "/n-2", body=second_body)
     direct_vm.clear_mocks()
     semantic_sources(direct_vm, EVIDENCE_URI, NOTICE_ORIGIN + "/n-2", second_body, immaterial())
     contract.assess_revocation(second)
     assert contract.get_node_record(evidence_id)["status"] == "INVALIDATED"
 
     third_body = b"question notice"
-    third = open_case(contract, evidence_id, na, uri=NOTICE_ORIGIN + "/n-3", body=third_body)
+    third = open_case(contract, direct_vm, evidence_id, na, uri=NOTICE_ORIGIN + "/n-3", body=third_body)
     direct_vm.clear_mocks()
     semantic_sources(direct_vm, EVIDENCE_URI, NOTICE_ORIGIN + "/n-3", third_body, material("QUESTION"))
     contract.assess_revocation(third)
@@ -174,16 +189,16 @@ def test_cross_case_severity_is_monotonic_and_order_safe(direct_vm, direct_deplo
 def test_overlapping_case_queues_are_isolated_when_both_touch_same_descendant(direct_vm, direct_deploy):
     contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
     ea = authority(contract, direct_vm, EVIDENCE_ORIGIN, "queue-isolation-e")
-    na = authority(contract, direct_vm, NOTICE_ORIGIN, "queue-isolation-n")
+    na = ea
     root = evidence(contract, ea, uri=EVIDENCE_ORIGIN + "/queue-isolation")
     child = contract.register_claim("queue", "Shared descendant")
     contract.register_dependency(root, child, "REQUIRES")
     first_body = b"first queued notice"
-    first = open_case(contract, root, na, uri=NOTICE_ORIGIN + "/queue-1", body=first_body)
+    first = open_case(contract, direct_vm, root, na, uri=NOTICE_ORIGIN + "/queue-1", body=first_body)
     semantic_sources(direct_vm, EVIDENCE_ORIGIN + "/queue-isolation", NOTICE_ORIGIN + "/queue-1", first_body, material("QUESTION"))
     contract.assess_revocation(first)
     second_body = b"second queued notice"
-    second = open_case(contract, root, na, uri=NOTICE_ORIGIN + "/queue-2", body=second_body)
+    second = open_case(contract, direct_vm, root, na, uri=NOTICE_ORIGIN + "/queue-2", body=second_body)
     direct_vm.clear_mocks()
     semantic_sources(direct_vm, EVIDENCE_ORIGIN + "/queue-isolation", NOTICE_ORIGIN + "/queue-2", second_body, material("INVALIDATE"))
     contract.assess_revocation(second)
@@ -192,7 +207,7 @@ def test_overlapping_case_queues_are_isolated_when_both_touch_same_descendant(di
     contract._apply_impact_status(child, "UNDER_REVIEW", "DIRECT_LOWER_SEVERITY", second)
     assert contract.get_node_record(child)["status"] == "QUARANTINED"
     third_body = b"third lower severity notice"
-    third = open_case(contract, root, na, uri=NOTICE_ORIGIN + "/queue-3", body=third_body)
+    third = open_case(contract, direct_vm, root, na, uri=NOTICE_ORIGIN + "/queue-3", body=third_body)
     direct_vm.clear_mocks()
     semantic_sources(direct_vm, EVIDENCE_ORIGIN + "/queue-isolation", NOTICE_ORIGIN + "/queue-3", third_body, material("QUESTION"))
     contract.assess_revocation(third)
@@ -203,7 +218,7 @@ def test_overlapping_case_queues_are_isolated_when_both_touch_same_descendant(di
 def test_one_case_converging_paths_keep_the_stronger_effect(direct_vm, direct_deploy):
     contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
     ea = authority(contract, direct_vm, EVIDENCE_ORIGIN, "converging-e")
-    na = authority(contract, direct_vm, NOTICE_ORIGIN, "converging-n")
+    na = ea
     root = evidence(contract, ea, uri=EVIDENCE_ORIGIN + "/converging-root")
     first_path = contract.register_claim("converging", "First path")
     second_path = contract.register_claim("converging", "Second path")
@@ -213,7 +228,7 @@ def test_one_case_converging_paths_keep_the_stronger_effect(direct_vm, direct_de
     contract.register_dependency(first_path, descendant, "SUPPORTS")
     contract.register_dependency(second_path, descendant, "REQUIRES")
     body = b"converging material notice"
-    case_id = open_case(contract, root, na, uri=NOTICE_ORIGIN + "/converging", body=body)
+    case_id = open_case(contract, direct_vm, root, na, uri=NOTICE_ORIGIN + "/converging", body=body)
     semantic_sources(direct_vm, EVIDENCE_ORIGIN + "/converging-root", NOTICE_ORIGIN + "/converging", body, material("INVALIDATE"))
     contract.assess_revocation(case_id)
     contract.process_impact(case_id, 32)
@@ -233,7 +248,7 @@ def test_immaterial_case_cannot_change_root_effect_even_if_internal_commit_is_ma
     ea = authority(contract, direct_vm, EVIDENCE_ORIGIN, "immaterial-guard-e")
     na = authority(contract, direct_vm, NOTICE_ORIGIN, "immaterial-guard-n")
     root = evidence(contract, ea, uri=EVIDENCE_ORIGIN + "/immaterial-guard")
-    case_id = open_case(contract, root, na, uri=NOTICE_ORIGIN + "/immaterial-guard")
+    case_id = open_case(contract, direct_vm, root, na, uri=NOTICE_ORIGIN + "/immaterial-guard")
     malformed = {
         "result_status": "CONCLUSIVE",
         "change_authentic": False,
@@ -291,12 +306,12 @@ def test_every_relationship_has_explicit_question_and_invalidate_semantics(
 ):
     contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
     ea = authority(contract, direct_vm, EVIDENCE_ORIGIN, "relation-" + relationship.lower())
-    na = authority(contract, direct_vm, NOTICE_ORIGIN, "notice-" + relationship.lower())
+    na = ea
     root = evidence(contract, ea)
     child = contract.register_claim("relation", relationship + " child")
     contract.register_dependency(root, child, relationship)
     body = (relationship + " question").encode()
-    case_id = open_case(contract, root, na, body=body)
+    case_id = open_case(contract, direct_vm, root, na, body=body)
     semantic_sources(direct_vm, EVIDENCE_URI, NOTICE_URI, body, material("QUESTION"))
     contract.assess_revocation(case_id)
     contract.process_impact(case_id, 32)
@@ -306,7 +321,7 @@ def test_every_relationship_has_explicit_question_and_invalidate_semantics(
     child2 = contract.register_claim("relation", relationship + " invalidate child")
     contract.register_dependency(root2, child2, relationship)
     body2 = (relationship + " invalidate").encode()
-    case2 = open_case(contract, root2, na, uri=NOTICE_ORIGIN + "/" + relationship.lower() + "-2", body=body2)
+    case2 = open_case(contract, direct_vm, root2, na, uri=NOTICE_ORIGIN + "/" + relationship.lower() + "-2", body=body2)
     direct_vm.clear_mocks()
     semantic_sources(direct_vm, EVIDENCE_ORIGIN + "/" + relationship.lower() + "-2", NOTICE_ORIGIN + "/" + relationship.lower() + "-2", body2, material("INVALIDATE"))
     contract.assess_revocation(case2)
@@ -344,7 +359,7 @@ def test_retry_telemetry_is_bounded_and_retryable_failures_do_not_consume_semant
     na = authority(contract, direct_vm, NOTICE_ORIGIN, "retry-bound-n")
     evidence_id = evidence(contract, ea, uri=EVIDENCE_ORIGIN + "/retry-bound")
     notice = b"retry bounded notice"
-    case_id = open_case(contract, evidence_id, na, uri=NOTICE_ORIGIN + "/retry-bound", body=notice)
+    case_id = open_case(contract, direct_vm, evidence_id, na, uri=NOTICE_ORIGIN + "/retry-bound", body=notice)
     direct_vm.strict_mocks = True
     for _ in range(12):
         contract.assess_revocation(case_id)
@@ -402,7 +417,7 @@ def test_forged_mirror_id_cannot_substitute_retrieval_location(direct_vm, direct
     direct_vm.mock_web(re.escape(valid_mirror_uri), {"status": 200, "body": EVIDENCE_BODY})
     contract.add_evidence_mirror(evidence_id, valid_mirror_uri)
     notice = b"forged mirror notice"
-    case_id = open_case(contract, evidence_id, na, uri=NOTICE_ORIGIN + "/forged-mirror", body=notice)
+    case_id = open_case(contract, direct_vm, evidence_id, na, uri=NOTICE_ORIGIN + "/forged-mirror", body=notice)
     direct_vm.clear_mocks()
     direct_vm.strict_mocks = True
     contract.assess_revocation(case_id)

@@ -6,7 +6,7 @@ import re
 import pytest
 
 
-CONTRACT = os.environ.get("PALINODE_CONTRACT", "contracts/palinode.py")
+CONTRACT = os.environ.get("PALINODE_CONTRACT", "contracts/palinode_v2.py")
 POLICY = "WELL_KNOWN_ADDRESS_NONCE_V1"
 EVIDENCE_ORIGIN = "https://recovery-evidence.example"
 NOTICE_ORIGIN = "https://recovery-notice.example"
@@ -39,7 +39,10 @@ def authority(contract, direct_vm, origin: str, nonce: str) -> str:
 def setup_recovery(direct_vm, direct_deploy):
     contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
     evidence_authority = authority(contract, direct_vm, EVIDENCE_ORIGIN, "recovery-evidence")
-    notice_authority = authority(contract, direct_vm, NOTICE_ORIGIN, "recovery-notice")
+    authority(contract, direct_vm, NOTICE_ORIGIN, "recovery-notice")
+    # Recovery fixtures use an authoritative source-lineage notice. The
+    # unrelated-authority challenge path is covered by the v2 suite.
+    notice_authority = evidence_authority
     old_body = b"fictional audit v1: condition X was reported as satisfied."
     successor_body = b"fictional audit v2: condition X was re-audited and corrected."
     old_uri = EVIDENCE_ORIGIN + "/old"
@@ -73,7 +76,7 @@ def setup_recovery(direct_vm, direct_deploy):
 
 
 def open_material_case(contract, direct_vm, notice_authority, old_id, old_body, suffix: str):
-    notice_uri = NOTICE_ORIGIN + "/notice-" + suffix
+    notice_uri = EVIDENCE_ORIGIN + "/notice-" + suffix
     notice_body = ("material correction " + suffix).encode()
     case_id = contract.open_revocation_case(
         old_id,
@@ -152,38 +155,35 @@ def test_operation_after_former_node_cap_remains_possible(direct_deploy):
 
 
 def test_65th_stronger_cause_is_retained_as_monotonic_overflow_safety_lock(direct_deploy):
-    """A full slot set must not suppress a later, stronger adverse finding."""
+    """Cause identity and severity counters remain exact beyond the old cap."""
     contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
     node_id = contract.register_claim("cause-capacity", "Cause capacity boundary")
-    cause_ids = [format(index, "064x") for index in range(1, 65)]
+    cause_ids = [format(index, "064x") for index in range(1, 101)]
     for case_id in cause_ids:
         contract._apply_impact_status(node_id, "QUESTIONED", "BOUNDARY_TEST", case_id)
 
-    full = contract.get_active_causes(node_id)
-    assert full["active_count"] == "64"
-    assert full["slot_count"] == "64"
-    assert full["overflow_count"] == "0"
+    summary = contract.get_active_causes(node_id)
+    assert summary["active_count"] == "100"
+    assert summary["questioned_count"] == "100"
+    assert summary["under_review_count"] == "0"
+    assert summary["quarantined_count"] == "0"
+    assert summary["invalidated_count"] == "0"
 
-    stronger_case_id = format(65, "064x")
+    stronger_case_id = cause_ids[64]
     contract._apply_impact_status(node_id, "INVALIDATED", "BOUNDARY_TEST", stronger_case_id)
-
-    after_overflow = contract.get_active_causes(node_id)
+    after_upgrade = contract.get_active_causes(node_id)
     assert contract.get_node_record(node_id)["status"] == "INVALIDATED"
-    assert after_overflow["active_count"] == "64"
-    assert after_overflow["overflow_count"] == "1"
-    assert after_overflow["overflow_severity"] == "INVALIDATED"
-    assert after_overflow["overflow_latest_case"] == stronger_case_id
-    assert len(after_overflow["overflow_commitment"]) == 64
+    assert after_upgrade["active_count"] == "100"
+    assert after_upgrade["questioned_count"] == "99"
+    assert after_upgrade["invalidated_count"] == "1"
 
-    # Resolving every individually named slot must not clear the unresolvable
-    # overflow safety summary or downgrade the node.
-    for index, case_id in enumerate(cause_ids, start=1000):
-        contract._resolve_active_cause(node_id, case_id, format(index, "064x"), "REINSTATE")
+    contract._resolve_active_cause(node_id, stronger_case_id, format(999, "064x"), "REINSTATE")
     final_state = contract.get_active_causes(node_id)
-    assert final_state["active_count"] == "0"
-    assert final_state["overflow_count"] == "1"
-    assert final_state["overflow_severity"] == "INVALIDATED"
-    assert contract.get_node_record(node_id)["status"] == "INVALIDATED"
+    assert final_state["active_count"] == "99"
+    assert final_state["questioned_count"] == "99"
+    assert final_state["invalidated_count"] == "0"
+    with pytest.raises(Exception, match="active cause mapping is inconsistent"):
+        contract._resolve_active_cause(node_id, stronger_case_id, format(1000, "064x"), "REINSTATE")
 
 
 def test_recovery_requires_cleared_linked_successor_and_is_permissionless(direct_vm, direct_deploy):
@@ -216,7 +216,7 @@ def test_recovery_is_consensus_backed_and_owner_cannot_self_reinstate(direct_vm,
 
 def test_recovery_requires_material_cause_and_rejects_unsupported_effect(direct_vm, direct_deploy):
     contract, _, notice_authority, old_id, successor_id, _, old_body, _ = setup_recovery(direct_vm, direct_deploy)
-    notice_uri = NOTICE_ORIGIN + "/immaterial"
+    notice_uri = EVIDENCE_ORIGIN + "/immaterial"
     notice_body = b"no material change"
     case_id = contract.open_revocation_case(old_id, notice_authority, notice_uri, digest(notice_body), len(notice_body), "CHANGED", "not material")
     direct_vm.mock_web(re.escape(EVIDENCE_ORIGIN + "/old"), {"status": 200, "body": old_body})

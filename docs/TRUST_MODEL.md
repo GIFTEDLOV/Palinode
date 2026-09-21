@@ -20,9 +20,11 @@
 Generic non-evidence node registration and case submission are permissionless,
 but authority-bearing writes are not. Evidence registration requires the
 active source-authority controller; dependency registration requires control of
-both endpoints; and successor lineage requires the predecessor authority
-controller plus a cleared same-lineage successor. This prevents an arbitrary
-caller from poisoning another party's graph or consuming its bounded slots.
+the child endpoint while validating the parent deterministically; and successor
+lineage requires the predecessor authority controller plus a cleared
+same-lineage successor. This lets independent consumers cite public evidence
+without letting arbitrary callers write another party's child graph or consume
+bounded capacity.
 The contract still records immutable claims and adjudicated impact without
 giving an owner the ability to rewrite evidence, erase nodes, override
 consensus, or change the transition policy at runtime.
@@ -34,8 +36,9 @@ remain separate canonical cases.
 
 Authority-backed evidence and notices require a verified authority ID. An
 authoritative notice is restricted to the target evidence's authority lineage;
-an unrelated verified authority is recorded as a third-party challenge and
-cannot produce an authoritative invalidation. The authority is bound to the
+an unrelated verified authority is recorded as a third-party challenge and may
+produce only a consensus-supported `MATERIAL`/`QUESTION` challenge, never an
+authoritative invalidation. The authority is bound to the
 registering address and normalized HTTPS origin by a
 consensus-checked `/.well-known/palinode.json` challenge. A caller cannot label
 an arbitrary origin as authoritative, select the validators, or choose the

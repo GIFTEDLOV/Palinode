@@ -67,7 +67,10 @@ def open_case(contract, target: str, notice_authority: str, notice_uri: str = NO
     )
 
 
-def material_result(root_effect: str = "INVALIDATE") -> dict[str, object]:
+def material_result(
+    root_effect: str = "INVALIDATE",
+    reason_code: str = "MATERIAL_WITHDRAWAL",
+) -> dict[str, object]:
     return {
         "result_status": "CONCLUSIVE",
         "change_authentic": True,
@@ -75,7 +78,7 @@ def material_result(root_effect: str = "INVALIDATE") -> dict[str, object]:
         "original_evidence_affected": True,
         "materiality": "MATERIAL",
         "root_effect": root_effect,
-        "reason_code": "MATERIAL_WITHDRAWAL",
+        "reason_code": reason_code,
     }
 
 
@@ -101,19 +104,181 @@ def test_unauthorized_successor_is_rejected_and_link_does_not_change_reliance(di
     assert contract.get_evidence_successor_link(old_id)["link_creator"] == sender_text(direct_vm)
 
 
-def test_dependency_requires_both_endpoint_controllers_and_records_assertor(direct_vm, direct_deploy):
+def test_successor_requires_the_same_authority_lineage(direct_vm, direct_deploy):
+    contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
+    authority_a = register_authority(contract, direct_vm, EVIDENCE_ORIGIN, "successor-lineage-a")
+    old_id = register_evidence(contract, authority_a, EVIDENCE_URI, b"old")
+    authenticate(contract, direct_vm, old_id, EVIDENCE_URI, b"old")
+
+    authority_b_origin = "https://other-authority.example"
+    with direct_vm.prank("0x" + "c" * 40):
+        authority_b = register_authority(contract, direct_vm, authority_b_origin, "successor-lineage-b")
+        new_id = register_evidence(
+            contract,
+            authority_b,
+            authority_b_origin + "/replacement",
+            b"replacement",
+            "Replacement",
+        )
+    authenticate(contract, direct_vm, new_id, authority_b_origin + "/replacement", b"replacement")
+
+    with direct_vm.expect_revert("successor authority lineage does not match"):
+        contract.link_evidence_successor(old_id, new_id)
+    assert contract.get_node_record(old_id)["reliance_status"] == "ACTIVE"
+
+
+def test_dependency_requires_child_controller_and_records_assertor(direct_vm, direct_deploy):
     contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
     parent = contract.register_claim("subject-1", "Parent")
+    child_owner = "0x" + "b" * 40
     with direct_vm.prank("0x" + "b" * 40):
         child = contract.register_claim("subject-1", "Child")
-    with direct_vm.prank("0x" + "b" * 40):
+        edge_id = contract.register_dependency(parent, child, "SUPPORTS")
+    assert contract.get_dependency_record(edge_id)["assertor"] == child_owner
+    with direct_vm.prank("0x" + "c" * 40):
         with direct_vm.expect_revert("caller is not node controller"):
             contract.register_dependency(parent, child, "SUPPORTS")
-    with direct_vm.expect_revert("caller is not node controller"):
-        contract.register_dependency(parent, child, "SUPPORTS")
     own_child = contract.register_claim("subject-1", "Own child")
     edge_id = contract.register_dependency(parent, own_child, "SUPPORTS")
     assert contract.get_dependency_record(edge_id)["assertor"] == sender_text(direct_vm)
+
+
+def test_cross_owner_parent_can_be_cited_without_parent_consent(direct_vm, direct_deploy):
+    contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
+    with direct_vm.prank("0x" + "a" * 40):
+        published_parent = contract.register_claim("subject-1", "Published parent")
+    with direct_vm.prank("0x" + "b" * 40):
+        consumer_child = contract.register_claim("subject-1", "Consumer child")
+        edge_id = contract.register_dependency(published_parent, consumer_child, "REQUIRES")
+    assert contract.get_dependency_record(edge_id)["parent_node_id"] == published_parent
+    assert contract.get_dependency_record(edge_id)["child_node_id"] == consumer_child
+
+
+def test_public_parent_has_no_griefable_outgoing_capacity(direct_vm, direct_deploy):
+    contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
+    parent = contract.register_claim("subject-1", "Public parent")
+    with direct_vm.prank("0x" + "b" * 40):
+        for index in range(65):
+            child = contract.register_claim("subject-1", f"Independent child {index}")
+            contract.register_dependency(parent, child, "SUPPORTS")
+    assert int(contract.get_edge_ids_page(0, 64)["count"]) == 64
+    assert int(contract.get_edge_ids_page(64, 64)["count"]) == 1
+    with direct_vm.prank("0x" + "c" * 40):
+        child = contract.register_claim("subject-1", "Later legitimate child")
+        contract.register_dependency(parent, child, "SUPPORTS")
+    assert int(contract.get_edge_ids_page(65, 64)["count"]) == 1
+
+
+def test_unrelated_authority_can_produce_material_question_challenge(direct_vm, direct_deploy):
+    contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
+    target_authority = register_authority(contract, direct_vm, EVIDENCE_ORIGIN, "standing-question")
+    target_id = register_evidence(contract, target_authority)
+    authenticate(contract, direct_vm, target_id)
+    with direct_vm.prank("0x" + "c" * 40):
+        notice_authority = register_authority(contract, direct_vm, NOTICE_ORIGIN, "standing-challenge")
+    notice_body = b"independent contrary evidence"
+    case_id = open_case(contract, target_id, notice_authority, NOTICE_URI, notice_body)
+    direct_vm.mock_web(re.escape(EVIDENCE_URI), {"status": 200, "body": BODY})
+    direct_vm.mock_web(re.escape(NOTICE_URI), {"status": 200, "body": notice_body})
+    direct_vm.mock_llm(
+        r"PALINODE semantic adjudicator",
+        json.dumps(material_result("QUESTION", "MATERIAL_THIRD_PARTY_CHALLENGE")),
+    )
+    contract.assess_revocation(case_id)
+    result = contract.get_revocation_case(case_id)
+    assert result["notice_kind"] == "THIRD_PARTY_CHALLENGE"
+    assert result["materiality"] == "MATERIAL"
+    assert result["root_effect"] == "QUESTION"
+    assert result["reason_code"] == "MATERIAL_THIRD_PARTY_CHALLENGE"
+    assert contract.get_node_record(target_id)["reliance_status"] == "QUESTIONED"
+
+
+def test_unrelated_authority_cannot_impersonate_publisher_withdrawal(direct_vm, direct_deploy):
+    contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
+    target_authority = register_authority(contract, direct_vm, EVIDENCE_ORIGIN, "standing-target-2")
+    target_id = register_evidence(contract, target_authority)
+    authenticate(contract, direct_vm, target_id)
+    with direct_vm.prank("0x" + "c" * 40):
+        notice_authority = register_authority(contract, direct_vm, NOTICE_ORIGIN, "standing-challenge-2")
+    notice_body = b"unrelated withdrawal claim"
+    case_id = open_case(contract, target_id, notice_authority, NOTICE_URI, notice_body)
+    direct_vm.mock_web(re.escape(EVIDENCE_URI), {"status": 200, "body": BODY})
+    direct_vm.mock_web(re.escape(NOTICE_URI), {"status": 200, "body": notice_body})
+    direct_vm.mock_llm(
+        r"PALINODE semantic adjudicator",
+        json.dumps(material_result("INVALIDATE", "MATERIAL_WITHDRAWAL")),
+    )
+    with direct_vm.expect_revert("third-party challenge can only question evidence"):
+        contract.assess_revocation(case_id)
+    assert contract.get_node_record(target_id)["reliance_status"] == "ACTIVE"
+
+
+def test_same_lineage_correction_can_produce_consensus_supported_material_effect(direct_vm, direct_deploy):
+    contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
+    authority_id = register_authority(contract, direct_vm, EVIDENCE_ORIGIN, "same-lineage-correction")
+    target_id = register_evidence(contract, authority_id)
+    authenticate(contract, direct_vm, target_id)
+    notice_body = b"publisher correction"
+    notice_uri = EVIDENCE_ORIGIN + "/correction"
+    case_id = open_case(contract, target_id, authority_id, notice_uri, notice_body)
+    direct_vm.mock_web(re.escape(EVIDENCE_URI), {"status": 200, "body": BODY})
+    direct_vm.mock_web(re.escape(notice_uri), {"status": 200, "body": notice_body})
+    direct_vm.mock_llm(
+        r"PALINODE semantic adjudicator",
+        json.dumps(material_result("INVALIDATE", "MATERIAL_CORRECTION")),
+    )
+    contract.assess_revocation(case_id)
+    assert contract.get_revocation_case(case_id)["notice_kind"] == "AUTHORITATIVE_REVOCATION"
+    assert contract.get_revocation_case(case_id)["reason_code"] == "MATERIAL_CORRECTION"
+    assert contract.get_node_record(target_id)["reliance_status"] == "INVALIDATED"
+
+
+def test_unrelated_garbage_challenge_has_no_adverse_state(direct_vm, direct_deploy):
+    contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
+    target_authority = register_authority(contract, direct_vm, EVIDENCE_ORIGIN, "garbage-target")
+    target_id = register_evidence(contract, target_authority)
+    authenticate(contract, direct_vm, target_id)
+    with direct_vm.prank("0x" + "c" * 40):
+        notice_authority = register_authority(contract, direct_vm, NOTICE_ORIGIN, "garbage-challenge")
+    notice_body = b"unrelated noise"
+    case_id = open_case(contract, target_id, notice_authority, NOTICE_URI, notice_body)
+    garbage_result = {
+        "result_status": "CONCLUSIVE",
+        "change_authentic": False,
+        "same_subject": False,
+        "original_evidence_affected": False,
+        "materiality": "IMMATERIAL",
+        "root_effect": "NO_CHANGE",
+        "reason_code": "NO_AUTHENTIC_CHANGE",
+    }
+    direct_vm.mock_web(re.escape(EVIDENCE_URI), {"status": 200, "body": BODY})
+    direct_vm.mock_web(re.escape(NOTICE_URI), {"status": 200, "body": notice_body})
+    direct_vm.mock_llm(r"PALINODE semantic adjudicator", json.dumps(garbage_result))
+    contract.assess_revocation(case_id)
+    result = contract.get_revocation_case(case_id)
+    assert result["notice_kind"] == "THIRD_PARTY_CHALLENGE"
+    assert result["materiality"] == "IMMATERIAL"
+    assert result["root_effect"] == "NO_CHANGE"
+    assert contract.get_node_record(target_id)["reliance_status"] == "ACTIVE"
+
+
+def test_dependency_duplicate_rejection_remains_child_authorized(direct_vm, direct_deploy):
+    contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
+    parent = contract.register_claim("subject-1", "Parent")
+    child = contract.register_claim("subject-1", "Child")
+    contract.register_dependency(parent, child, "SUPPORTS")
+    with direct_vm.expect_revert("duplicate dependency"):
+        contract.register_dependency(parent, child, "SUPPORTS")
+
+
+def test_edge_assertor_is_not_parent_controller(direct_vm, direct_deploy):
+    contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
+    with direct_vm.prank("0x" + "a" * 40):
+        parent = contract.register_claim("subject-1", "Parent")
+    with direct_vm.prank("0x" + "b" * 40):
+        child = contract.register_claim("subject-1", "Child")
+        edge_id = contract.register_dependency(parent, child, "SUPPORTS")
+    assert contract.get_dependency_record(edge_id)["assertor"] == "0x" + "b" * 40
 
 
 def test_changed_evidence_bytes_short_circuit_semantic_execution(direct_vm, direct_deploy):
@@ -168,17 +333,6 @@ def test_every_non_cleared_authentication_state_blocks_semantic_revocation(direc
             contract.assess_revocation(case_id)
 
 
-def test_unauthorized_fanout_attempts_cannot_consume_parent_capacity(direct_vm, direct_deploy):
-    contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
-    parent = contract.register_claim("subject-1", "Protected parent")
-    with direct_vm.prank("0x" + "b" * 40):
-        for index in range(65):
-            child = contract.register_claim("subject-1", f"Attacker child {index}")
-            with direct_vm.expect_revert("caller is not node controller"):
-                contract.register_dependency(parent, child, "SUPPORTS")
-    assert contract.get_edge_ids_page(0, 8)["count"] == "0"
-
-
 def test_revoked_notice_authority_cannot_open_authoritative_case(direct_vm, direct_deploy):
     contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
     target_authority = register_authority(contract, direct_vm, EVIDENCE_ORIGIN, "revoked-target-v2")
@@ -188,23 +342,6 @@ def test_revoked_notice_authority_cannot_open_authoritative_case(direct_vm, dire
         contract.revoke_source_authority(notice_authority)
     with direct_vm.expect_revert("authority is not active"):
         open_case(contract, target_id, notice_authority, NOTICE_URI)
-
-
-def test_unrelated_authority_is_challenge_only_and_cannot_invalidate(direct_vm, direct_deploy):
-    contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
-    target_authority = register_authority(contract, direct_vm, EVIDENCE_ORIGIN, "standing-target")
-    target_id = register_evidence(contract, target_authority)
-    authenticate(contract, direct_vm, target_id)
-    with direct_vm.prank("0x" + "c" * 40):
-        notice_authority = register_authority(contract, direct_vm, NOTICE_ORIGIN, "standing-notice")
-    notice_body = b"unrelated challenge"
-    case_id = open_case(contract, target_id, notice_authority, NOTICE_URI, notice_body)
-    assert contract.get_revocation_case(case_id)["notice_kind"] == "THIRD_PARTY_CHALLENGE"
-    direct_vm.mock_web(re.escape(EVIDENCE_URI), {"status": 200, "body": BODY})
-    direct_vm.mock_web(re.escape(NOTICE_URI), {"status": 200, "body": notice_body})
-    direct_vm.mock_llm(r"PALINODE semantic adjudicator", json.dumps(material_result("INVALIDATE")))
-    with direct_vm.expect_revert("third-party challenge cannot invalidate evidence"):
-        contract.assess_revocation(case_id)
 
 
 def test_late_edge_inherits_active_cause_without_new_consensus(direct_vm, direct_deploy):
@@ -271,6 +408,69 @@ def test_active_causes_are_individually_recoverable_beyond_64(direct_vm, direct_
     assert contract.get_active_causes(node_id)["active_count"] == "99"
 
 
+def test_active_cause_counters_match_identity_mapping_across_mixed_recovery_operations(
+    direct_vm, direct_deploy
+):
+    contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
+    node_id = contract.register_claim("subject-1", "Counter property target")
+    statuses = ("QUESTIONED", "UNDER_REVIEW", "QUARANTINED", "INVALIDATED")
+    case_ids = [digest(("mixed-case-" + str(index)).encode()) for index in range(100)]
+    for index, case_id in enumerate(case_ids):
+        contract._apply_impact_status(node_id, statuses[index % len(statuses)], "PROPERTY", case_id, "QUESTION")
+
+    summary = contract.get_active_causes(node_id)
+    assert summary["active_count"] == "100"
+    assert summary["questioned_count"] == "25"
+    assert summary["under_review_count"] == "25"
+    assert summary["quarantined_count"] == "25"
+    assert summary["invalidated_count"] == "25"
+
+    # Same-case repetition is idempotent; stronger evidence moves exactly one
+    # cause between counters.
+    contract._apply_impact_status(node_id, "QUESTIONED", "PROPERTY", case_ids[0], "QUESTION")
+    contract._apply_impact_status(node_id, "INVALIDATED", "PROPERTY", case_ids[0], "INVALIDATE")
+    summary = contract.get_active_causes(node_id)
+    assert summary["active_count"] == "100"
+    assert summary["questioned_count"] == "24"
+    assert summary["invalidated_count"] == "26"
+
+    # Recover a middle cause and the strongest cause, then prove a second
+    # resolution cannot decrement a counter or leave a ghost identity.
+    contract._resolve_active_cause(node_id, case_ids[50], digest(b"recover-middle"), "REINSTATE")
+    contract._resolve_active_cause(node_id, case_ids[0], digest(b"recover-strongest"), "REINSTATE")
+    summary = contract.get_active_causes(node_id)
+    assert summary["active_count"] == "98"
+    assert summary["invalidated_count"] == "25"
+    assert summary["quarantined_count"] == "24"
+    first_page = contract.get_active_causes_page(node_id, 0, 64)
+    second_page = contract.get_active_causes_page(node_id, 64, 64)
+    listed = {
+        value.split("|", 1)[0]
+        for page in (first_page, second_page)
+        for index in range(int(page["count"]))
+        for value in (page["slot_" + str(index)],)
+    }
+    assert listed == set(case_ids) - {case_ids[50], case_ids[0]}
+    with direct_vm.expect_revert("active cause mapping is inconsistent"):
+        contract._resolve_active_cause(node_id, case_ids[0], digest(b"recover-twice"), "REINSTATE")
+
+    # A late edge inherits a cause without new consensus. Resolving the child
+    # copy must not resolve the independent parent cause.
+    parent_id = contract.register_claim("subject-1", "Counter parent")
+    child_id = contract.register_claim("subject-1", "Counter child")
+    late_case = digest(b"late-counter-case")
+    contract._apply_impact_status(parent_id, "QUARANTINED", "PROPERTY", late_case, "INVALIDATE")
+    contract.case_root_effect[late_case] = "INVALIDATE"
+    contract.case_status[late_case] = "COMPLETE"
+    contract.case_queue.get_or_insert_default(late_case)
+    contract.register_dependency(parent_id, child_id, "REQUIRES")
+    assert contract.get_active_causes(child_id)["active_count"] == "1"
+    assert contract.get_active_causes(child_id)["quarantined_count"] == "1"
+    contract._resolve_active_cause(child_id, late_case, digest(b"recover-late"), "REINSTATE")
+    assert contract.get_active_causes(child_id)["active_count"] == "0"
+    assert contract.get_active_causes(parent_id)["active_count"] == "1"
+
+
 def test_benign_authority_rotation_preserves_historical_authentication(direct_vm, direct_deploy):
     contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
     authority_id = register_authority(contract, direct_vm, EVIDENCE_ORIGIN, "rotation-v2")
@@ -294,6 +494,39 @@ def test_benign_authority_rotation_preserves_historical_authentication(direct_vm
     assert contract.get_source_authority_version(authority_id, 1)["status"] == "SUPERSEDED"
     authenticate(contract, direct_vm, evidence_id)
     assert contract.get_node_record(evidence_id)["authentication_status"] == "CLEARED"
+
+
+def test_revoking_authority_blocks_historical_authentication_without_collapsing_version_status(
+    direct_vm, direct_deploy
+):
+    contract = direct_deploy(CONTRACT, sdk_version="v0.2.16")
+    authority_id = register_authority(contract, direct_vm, EVIDENCE_ORIGIN, "rotation-revoke-v2")
+    evidence_id = register_evidence(contract, authority_id)
+    replacement_controller = "0x" + "d" * 40
+    rotation = json.dumps(
+        {
+            "palinode": "1",
+            "authority_id": authority_id,
+            "authority_version": "2",
+            "authority_address": replacement_controller,
+            "canonical_origin": EVIDENCE_ORIGIN,
+            "nonce": "rotation-revoke-next",
+            "verification_policy": POLICY,
+        },
+        separators=(",", ":"),
+    ).encode()
+    direct_vm.clear_mocks()
+    direct_vm.mock_web(re.escape(EVIDENCE_ORIGIN + "/.well-known/palinode.json"), {"status": 200, "body": rotation})
+    contract.rotate_source_authority(authority_id, "rotation-revoke-next")
+    assert contract.get_source_authority_version(authority_id, 1)["status"] == "SUPERSEDED"
+
+    with direct_vm.prank(replacement_controller):
+        contract.revoke_source_authority(authority_id)
+    assert contract.get_source_authority(authority_id)["status"] == "REVOKED"
+    assert contract.get_source_authority_version(authority_id, 1)["status"] == "SUPERSEDED"
+    contract.authenticate_evidence(evidence_id)
+    assert contract.get_node_record(evidence_id)["authentication_status"] == "REJECTED"
+    assert contract.get_node_record(evidence_id)["historical_validity"] == "HISTORICAL_ACCEPTED"
 
 
 def test_mirror_registration_is_controller_authorized(direct_vm, direct_deploy):

@@ -3,7 +3,7 @@ import os
 import random
 
 
-CONTRACT = os.environ.get("PALINODE_CONTRACT", "contracts/palinode.py")
+CONTRACT = os.environ.get("PALINODE_CONTRACT", "contracts/palinode_v2.py")
 
 
 def test_generated_forward_graphs_preserve_creation_order(direct_deploy):
