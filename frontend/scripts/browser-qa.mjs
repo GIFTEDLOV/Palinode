@@ -1,13 +1,31 @@
 /* global document, window */
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright';
 
 const localUrl = process.env.PALINODE_LOCAL_URL || 'http://127.0.0.1:4175';
 const productionUrl = process.env.PALINODE_PRODUCTION_URL || 'https://palinode-app.vercel.app';
 const repoRoot = path.resolve(process.cwd(), '..');
+const deterministic = process.env.PALINODE_SUITE === 'deterministic';
+const simulate429 = deterministic && process.env.PALINODE_SIMULATE_429 === 'once';
+const rateLimitOnly = simulate429 && process.env.PALINODE_RATE_LIMIT_ONLY === 'true';
+const deterministicFixture = deterministic
+  ? JSON.parse(await readFile(path.join(repoRoot, 'frontend', 'tests', 'fixtures', 'v4-rpc', 'responses.json'), 'utf8'))
+  : null;
+const deterministicProof = deterministic
+  ? {
+    evidence: '/app/evidence/ad68b1c64e951fc88b3cb94cbb481978555c4fef7d82cbf68938f1e5c2b492ee',
+    decision: '/app/decisions/9210f33e55b66de6c6680a1a7ea51c4fe6651233f2116299e5bbf26188692e9d',
+    revocation: '/app/revocations/86bb1eaddcd802361a5105a8e492cc67f2d3fc647e2a20111bd1158ea4e07534',
+    thirdParty: '/app/revocations/085a386fb3f6f7638fbfcb41b2b69dbfa0ba17e2641178c161aef14d77ceef53',
+    recovery: '/app/recoveries/8541568d68dacb839e6d0434c4a15019ba7ba4424a04667b574bbbeddd7acb1e',
+    authority: '/app/authorities/f5d0db56d7bf3eb85e2b5ef02f15ec06170db45d1ada322982e8d382c664f4b3',
+    authorityC: '/app/authorities/2a5d4150757d86f9ea35b602de289eaebed92246d20039c113655f020acf8ffc',
+  }
+  : null;
 const browserQaRoot = path.join(repoRoot, 'artifacts', 'browser-qa');
 const finalRoot = path.join(repoRoot, 'artifacts', 'final-screenshots');
+const summaryFile = process.env.PALINODE_SUMMARY_FILE || path.join(browserQaRoot, 'summary.json');
 const viewports = {
   desktop_1440x900: { width: 1440, height: 900 },
   desktop_1920x1080: { width: 1920, height: 1080 },
@@ -86,7 +104,9 @@ await mkdir(finalRoot, { recursive: true });
 const browser = await chromium.launch({ headless: true });
 const summary = { targets: {}, assertions: [], screenshots: [] };
 const readCache = new Map();
-const targets = process.env.PALINODE_TARGET === 'wallet-only'
+const targets = deterministic
+  ? [['deterministic', localUrl]]
+  : process.env.PALINODE_TARGET === 'wallet-only'
   ? []
   : process.env.PALINODE_TARGET === 'production'
   ? [['production', productionUrl]]
@@ -96,38 +116,72 @@ const targets = process.env.PALINODE_TARGET === 'wallet-only'
 
 for (const [target, base] of targets) {
   const context = await browser.newContext({ viewport: viewports.desktop_1440x900 });
-  await context.route('**/api/rpc**', async (route) => {
-    const request = route.request();
-    if (request.method() !== 'POST') return route.continue();
-    let payload;
-    try { payload = JSON.parse(request.postData() || '{}'); } catch { return route.continue(); }
-    if (payload.method !== 'gen_call') return route.continue();
-    const key = JSON.stringify({ ...payload, id: 0 });
-    const cached = readCache.get(key);
-    if (cached) return route.fulfill(cached);
-    const response = await route.fetch();
-    const body = await response.body();
-    const result = { status: response.status(), headers: response.headers(), body };
-    if (response.ok()) readCache.set(key, result);
-    return route.fulfill(result);
-  });
   const page = await context.newPage();
   const errors = [];
-  page.on('console', (message) => { if (message.type() === 'error') recordError(errors, message.text()); });
+  let injected429 = false;
+  let firstReadAt = 0;
+  let retryReadAt = 0;
+  let throttledKey = '';
+  page.on('console', (message) => {
+    if (message.type() !== 'error') return;
+    const text = message.text();
+    if (simulate429 && /429|upstream rate limit \(deterministic test\)/i.test(text)) return;
+    recordError(errors, text);
+  });
   page.on('pageerror', (error) => recordError(errors, error.message));
-  const ids = await collectIds(page, base);
+  if (deterministic) {
+    await context.unrouteAll({ behavior: 'ignoreErrors' });
+    await context.route('https://fonts.googleapis.com/**', (route) => route.fulfill({ status: 200, headers: { 'content-type': 'text/css' }, body: '' }));
+    await context.route('https://fonts.gstatic.com/**', (route) => route.fulfill({ status: 204, body: '' }));
+    await context.route('**/api/rpc**', async (route) => {
+      const request = route.request();
+      if (request.method() !== 'POST') return route.continue();
+      const payload = JSON.parse(request.postData() || '{}');
+      if (payload.method !== 'gen_call') return route.continue();
+      const key = JSON.stringify({ ...payload, id: 0 });
+      const entry = deterministicFixture.responses[key];
+      if (!entry) throw new Error(`Missing deterministic V4 fixture response for ${payload.params?.[0]?.data || payload.method}`);
+      if (!firstReadAt) firstReadAt = Date.now();
+      if (simulate429 && !injected429) {
+        injected429 = true;
+        throttledKey = key;
+        return route.fulfill({ status: 429, headers: { 'content-type': 'application/json', 'retry-after': '2' }, body: JSON.stringify({ jsonrpc: '2.0', error: { code: -32005, message: 'upstream rate limit (deterministic test)' }, id: payload.id }) });
+      }
+      if (injected429 && key === throttledKey && !retryReadAt) retryReadAt = Date.now();
+      return route.fulfill({ status: entry.status, headers: entry.headers, body: entry.body });
+    });
+  } else {
+    await context.route('**/api/rpc**', async (route) => {
+      const request = route.request();
+      if (request.method() !== 'POST') return route.continue();
+      let payload;
+      try { payload = JSON.parse(request.postData() || '{}'); } catch { return route.continue(); }
+      if (payload.method !== 'gen_call') return route.continue();
+      const key = JSON.stringify({ ...payload, id: 0 });
+      const cached = readCache.get(key);
+      if (cached) return route.fulfill(cached);
+      const response = await route.fetch();
+      const body = await response.body();
+      const result = { status: response.status(), headers: response.headers(), body };
+      if (response.ok()) readCache.set(key, result);
+      return route.fulfill(result);
+    });
+  }
+  const ids = rateLimitOnly ? {} : await collectIds(page, base);
+  if (deterministic && !rateLimitOnly) Object.assign(ids, deterministicProof);
   if (!ids.evidence && ids.revocation) {
     await route(page, base, ids.revocation);
     const evidenceLink = page.locator('a[href^="/app/evidence/"]').first();
     if (await evidenceLink.count()) ids.evidence = await evidenceLink.getAttribute('href');
   }
   const dynamicRoutes = [
-    ...routes,
+    ...(rateLimitOnly ? [['overview', '/app']] : routes),
     ...(ids.evidence ? [['evidence-detail', ids.evidence]] : []),
     ...(ids.decision ? [['decision-detail', ids.decision]] : []),
     ...(ids.revocation ? [['revocation-detail', ids.revocation]] : []),
     ...(ids.recovery ? [['recovery-detail', ids.recovery]] : []),
     ...(ids.authority ? [['authority-detail', ids.authority]] : []),
+    ...(deterministicProof && !rateLimitOnly ? [['third-party-detail', deterministicProof.thirdParty], ['authority-c-detail', deterministicProof.authorityC]] : []),
   ];
   const routeResults = [];
   const responsiveRoutes = new Set(['landing', 'overview', 'graph', 'evidence', 'evidence-detail', 'decision-detail', 'revocation-detail', 'recovery-detail', 'authority-detail', 'proof', 'docs']);
@@ -160,8 +214,9 @@ for (const [target, base] of targets) {
     const body = await page.locator('body').innerText();
     if (!body.includes('AUTHENTICATION') || !body.includes('RELIANCE')) throw new Error(`${target}: evidence authentication/reliance distinction missing`);
   }
+  if (deterministic && simulate429 && (!injected429 || !retryReadAt || retryReadAt - firstReadAt < 1_000)) throw new Error(`${target}: throttle regression did not show bounded backoff/recovery`);
   if (errors.length) throw new Error(`${target}: browser console errors: ${errors.join(' | ')}`);
-  summary.targets[target] = { ids, routeCount: routeResults.length, consoleErrors: errors.length };
+  summary.targets[target] = { ids, routeCount: routeResults.length, consoleErrors: errors.length, injected429, retryDelayMs: retryReadAt && firstReadAt ? retryReadAt - firstReadAt : 0 };
   await page.waitForTimeout(500);
   await context.unrouteAll({ behavior: 'ignoreErrors' });
   await context.close();
@@ -216,6 +271,6 @@ summary.wallet = { walletConnected, wrongNetwork, wrongNetworkWrite, switchedAcc
 await walletContext.unrouteAll({ behavior: 'ignoreErrors' });
 await walletContext.close();
 
-await writeFile(path.join(browserQaRoot, 'summary.json'), JSON.stringify(summary, null, 2));
+await writeFile(summaryFile, JSON.stringify(summary, null, 2));
 await browser.close();
 console.log(JSON.stringify(summary, null, 2));

@@ -1,0 +1,69 @@
+{
+  "result": "PASS",
+  "tx_id": "0xcd34f14f3165de8ec1e477d7dfac46e0c0b51b063f3a4f933c1a9ac2839cd8ef",
+  "sender": "0x4f7a14c8cd83caa18Fafc35aA91a8483Cc95E3E5",
+  "target": "0x05243cB6db90EE210a22Aa3c16fdc4F893d7b13b",
+  "method": "assess_revocation",
+  "args": [
+    "86bb1eaddcd802361a5105a8e492cc67f2d3fc647e2a20111bd1158ea4e07534"
+  ],
+  "protocol_status": "FINALIZED",
+  "execution_result": "ERROR",
+  "error_reason": "case is not assessable",
+  "expected_safe_method": "process_impact",
+  "expected_safe_args": [
+    "86bb1eaddcd802361a5105a8e492cc67f2d3fc647e2a20111bd1158ea4e07534",
+    1
+  ],
+  "pre_state": {
+    "source": "evidence/studionet/v4/frontend-wallet-smoke-preflight.json",
+    "case_status": "COMPLETE",
+    "cursor": "3",
+    "queue_length": "3",
+    "processed_steps": "3",
+    "history_recent_count": "1",
+    "history_slot_0": "16|CONCLUSIVE|MATERIAL|INVALIDATE|MATERIAL_REVOCATION",
+    "history_total_count": "1"
+  },
+  "post_state": {
+    "source": "fresh LATEST_FINAL reads after the wrong transaction finalized",
+    "case_status": "COMPLETE",
+    "cursor": "3",
+    "queue_length": "3",
+    "processed_steps": "3",
+    "history_recent_count": "1",
+    "history_slot_0": "16|CONCLUSIVE|MATERIAL|INVALIDATE|MATERIAL_REVOCATION",
+    "history_total_count": "1",
+    "target_evidence_id": "ad68b1c64e951fc88b3cb94cbb481978555c4fef7d82cbf68938f1e5c2b492ee",
+    "target_authentication_status": "CLEARED",
+    "target_reliance_status": "SUPERSEDED",
+    "target_status_transition_count": "2",
+    "target_assessment_transition_count": "2",
+    "active_cause_page": {
+      "count": "1",
+      "cursor": "0",
+      "next_cursor": "1",
+      "slot_0": "085a386fb3f6f7638fbfcb41b2b69dbfa0ba17e2641178c161aef14d77ceef53|QUESTIONED"
+    },
+    "status_history": {
+      "recent_count": "2",
+      "slot_0": "17|ad68b1c64e951fc88b3cb94cbb481978555c4fef7d82cbf68938f1e5c2b492ee|ACTIVE|INVALIDATED|ROOT_INVALIDATE|86bb1eaddcd802361a5105a8e492cc67f2d3fc647e2a20111bd1158ea4e07534",
+      "slot_1": "25|ad68b1c64e951fc88b3cb94cbb481978555c4fef7d82cbf68938f1e5c2b492ee|INVALIDATED|SUPERSEDED|RECOVERY_SUPERSEDE|8541568d68dacb839e6d0434c4a15019ba7ba4424a04667b574bbbeddd7acb1e",
+      "total_count": "2"
+    }
+  },
+  "comparisons": {
+    "case_status_unchanged": true,
+    "queue_cursor_unchanged": true,
+    "queue_length_unchanged": true,
+    "processed_steps_unchanged": true,
+    "assessment_history_unchanged": true,
+    "no_new_case_result_history": true,
+    "no_new_target_status_transition": true,
+    "no_new_target_assessment_transition": true,
+    "no_new_node_or_edge_created": "not applicable to assess_revocation error path; no creation method was invoked",
+    "transaction_error_prevented_contract_mutation": true
+  },
+  "CANONICAL_MUTATION_OCCURRED": false,
+  "note": "The fresh reads match the recorded preflight for all fields captured before the signature. The finalized execution error occurred before semantic assessment and before any successful state commit; this postmortem attributes no canonical mutation to the wrong transaction."
+}

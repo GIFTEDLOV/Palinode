@@ -12,6 +12,13 @@
     "read-smoke": "node scripts/read-smoke.mjs",
     "e2e-smoke": "node scripts/e2e-smoke.mjs",
     "browser-qa": "node scripts/browser-qa.mjs",
+    "browser:e2e": "node scripts/browser-e2e-deterministic.mjs",
+    "browser:detail-cold-cache": "node scripts/browser-detail-cold-cache.mjs",
+    "browser:rate-limit": "node scripts/browser-e2e-rate-limit.mjs",
+    "browser:wallet-action": "node scripts/browser-wallet-action.mjs",
+    "browser:canary": "node scripts/live-canary.mjs",
+    "capture:v4-fixture": "node scripts/capture-v4-rpc-fixture.mjs",
+    "wallet:preflight": "node scripts/wallet-smoke-preflight.mjs",
     "local-production-server": "node scripts/local-production-server.mjs",
     "lint": "eslint .",
     "typecheck": "tsc -b --pretty false"

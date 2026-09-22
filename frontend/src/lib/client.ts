@@ -68,6 +68,22 @@ export async function readContract<T = unknown>(method: string, args: CalldataEn
   return await client.readContract({ address: CONTRACT_ADDRESS, functionName: method, args, transactionHashVariant: TransactionHashVariant.LATEST_FINAL }) as T;
 }
 
+export async function loadDirectNode(nodeId: string, client = publicClient()): Promise<NodeRecord> {
+  return { ...asRecord(await readContract('get_node_record', [nodeId], client)), node_id: nodeId } as NodeRecord;
+}
+
+export async function loadDirectAuthority(authorityId: string, client = publicClient()): Promise<AuthorityRecord> {
+  return { ...asRecord(await readContract('get_source_authority', [authorityId], client)), authority_id: authorityId } as AuthorityRecord;
+}
+
+export async function loadDirectRevocation(caseId: string, client = publicClient()): Promise<RevocationCase> {
+  return { ...asRecord(await readContract('get_revocation_case', [caseId], client)), case_id: caseId } as RevocationCase;
+}
+
+export async function loadDirectRecovery(recoveryId: string, client = publicClient()): Promise<RecoveryCase> {
+  return { ...asRecord(await readContract('get_recovery_case', [recoveryId], client)), recovery_id: recoveryId } as RecoveryCase;
+}
+
 async function collectPage<T>(method: string, detailMethod: string, idKey: string, map: (record: RawRecord) => T, client: GenLayerClient<typeof studionet>): Promise<Page<T>> {
   const items: T[] = [];
   let cursor = 0;

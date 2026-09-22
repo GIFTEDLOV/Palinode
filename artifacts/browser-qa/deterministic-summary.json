@@ -1,0 +1,29 @@
+{
+  "targets": {
+    "deterministic": {
+      "ids": {
+        "evidence": "/app/evidence/ad68b1c64e951fc88b3cb94cbb481978555c4fef7d82cbf68938f1e5c2b492ee",
+        "decision": "/app/decisions/9210f33e55b66de6c6680a1a7ea51c4fe6651233f2116299e5bbf26188692e9d",
+        "revocation": "/app/revocations/86bb1eaddcd802361a5105a8e492cc67f2d3fc647e2a20111bd1158ea4e07534",
+        "recovery": "/app/recoveries/8541568d68dacb839e6d0434c4a15019ba7ba4424a04667b574bbbeddd7acb1e",
+        "authority": "/app/authorities/f5d0db56d7bf3eb85e2b5ef02f15ec06170db45d1ada322982e8d382c664f4b3",
+        "thirdParty": "/app/revocations/085a386fb3f6f7638fbfcb41b2b69dbfa0ba17e2641178c161aef14d77ceef53",
+        "authorityC": "/app/authorities/2a5d4150757d86f9ea35b602de289eaebed92246d20039c113655f020acf8ffc"
+      },
+      "routeCount": 96,
+      "consoleErrors": 0,
+      "injected429": false,
+      "retryDelayMs": 0
+    }
+  },
+  "assertions": [],
+  "screenshots": [],
+  "wallet": {
+    "walletConnected": "0x111111…111111",
+    "wrongNetwork": "WRONG NETWORK",
+    "wrongNetworkWrite": "Switch wallet to Studionet (chain 61999) before sending a write.",
+    "switchedAccount": "0x222222…222222",
+    "correctNetwork": "Studionet / 61999",
+    "walletDisconnected": "CONNECT WALLET"
+  }
+}

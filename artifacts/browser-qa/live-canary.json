@@ -1,0 +1,20 @@
+{
+  "result": "PASS",
+  "productionUrl": "https://palinode-app.vercel.app",
+  "contract": "0x05243cB6db90EE210a22Aa3c16fdc4F893d7b13b",
+  "routes": [
+    "/",
+    "/app",
+    "/app/graph",
+    "/app/evidence/ad68b1c64e951fc88b3cb94cbb481978555c4fef7d82cbf68938f1e5c2b492ee",
+    "/app/revocations/86bb1eaddcd802361a5105a8e492cc67f2d3fc647e2a20111bd1158ea4e07534",
+    "/app/revocations/085a386fb3f6f7638fbfcb41b2b69dbfa0ba17e2641178c161aef14d77ceef53",
+    "/app/recoveries/8541568d68dacb839e6d0434c4a15019ba7ba4424a04667b574bbbeddd7acb1e",
+    "/app/authorities/2a5d4150757d86f9ea35b602de289eaebed92246d20039c113655f020acf8ffc",
+    "/app/proof"
+  ],
+  "rpc429": 0,
+  "consoleErrors": 0,
+  "authorityA": "f5d0db56d7bf3eb85e2b5ef02f15ec06170db45d1ada322982e8d382c664f4b3",
+  "authorityC": "2a5d4150757d86f9ea35b602de289eaebed92246d20039c113655f020acf8ffc"
+}

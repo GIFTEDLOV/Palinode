@@ -1,0 +1,34 @@
+{
+  "result": "PASS",
+  "network": "Studionet",
+  "chain_id": 61999,
+  "contract_address": "0x05243cB6db90EE210a22Aa3c16fdc4F893d7b13b",
+  "method": "process_impact",
+  "args": [
+    "86bb1eaddcd802361a5105a8e492cc67f2d3fc647e2a20111bd1158ea4e07534",
+    1
+  ],
+  "caller_requirement": "any caller accepted by the public write; this is a completed-case no-op",
+  "object_id": "86bb1eaddcd802361a5105a8e492cc67f2d3fc647e2a20111bd1158ea4e07534",
+  "case_status": "COMPLETE",
+  "queue_state": {
+    "case_status": "COMPLETE",
+    "cursor": "3",
+    "processed_steps": "3",
+    "queue_length": "3"
+  },
+  "history": {
+    "recent_count": "1",
+    "slot_0": "16|CONCLUSIVE|MATERIAL|INVALIDATE|MATERIAL_REVOCATION",
+    "total_count": "1"
+  },
+  "expected_effect": "u256(0); no sequence counter, status/history, or queue mutation",
+  "source_proof": {
+    "path": "contracts/palinode_v2.py",
+    "sha256": "0f23a120776b09be989e6112b34d27ae415e1808232be591f94d1e17d80c5601",
+    "process_impact_definition_lines": "2863-2873",
+    "complete_case_branch": "if self.case_status[case_id] == CASE_COMPLETE: return u256(0)"
+  },
+  "value": "0 GEN",
+  "sdk_fee_estimate": "genlayer-js performs eth_estimateGas during wallet write preparation; no signature has been requested"
+}

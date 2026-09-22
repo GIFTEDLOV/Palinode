@@ -6,7 +6,8 @@ import { CHAIN_ID, CONTRACT_ADDRESS, RPC_URL } from './config';
 import type { ProtocolSnapshot, TrackedTransaction } from './types';
 import { connectedWalletState, connectWallet, loadSnapshot, pollTransaction, publicClient, walletClient } from './lib/client';
 import { decodeTransactions, encodeTransactions, mergeTrackedTransaction, resumableTransactions } from './lib/transactions';
-import type { CalldataEncodable } from 'genlayer-js/types';
+import { retryRead } from './lib/resilience';
+import type { PendingWriteDescriptor } from './lib/writeDescriptor';
 
 const EMPTY_SNAPSHOT: ProtocolSnapshot = { nodes: [], edges: [], authorities: [], revocations: [], recoveries: [], loading: true, error: null, refreshedAt: null, freshness: 'REFRESHING' };
 const TX_KEY = 'palinode.tracked.transactions.v2';
@@ -113,12 +114,15 @@ export function ProtocolProvider({ children }: { children: ReactNode }) {
     }
     setSnapshot((current) => ({ ...current, loading: !cached, error: null, freshness: 'REFRESHING' }));
     try {
-      const data = await loadSnapshot(publicClient());
+      const data = await retryRead(() => loadSnapshot(publicClient()));
       const savedAt = Date.now();
       try { sessionStorage.setItem(SNAPSHOT_CACHE_KEY, JSON.stringify({ savedAt, data })); } catch { /* cache is derived and optional */ }
       setSnapshot({ ...data, loading: false, error: null, refreshedAt: savedAt, freshness: 'LIVE' });
     } catch (reason) {
-      setSnapshot((current) => ({ ...current, loading: false, error: reason instanceof Error ? reason.message : 'The canonical read surface is unavailable.', freshness: current.refreshedAt ? 'RPC_UNAVAILABLE' : 'RPC_UNAVAILABLE' }));
+      setSnapshot((current) => {
+        const hasVerifiedSnapshot = current.refreshedAt !== null && (current.nodes.length > 0 || current.edges.length > 0 || current.authorities.length > 0 || current.revocations.length > 0 || current.recoveries.length > 0);
+        return { ...current, loading: false, error: reason instanceof Error ? reason.message : 'The canonical read surface is unavailable.', freshness: hasVerifiedSnapshot ? 'RPC_UNAVAILABLE' : 'REFRESHING' };
+      });
     }
   }, []);
   useEffect(() => {
@@ -137,7 +141,7 @@ export function useProtocol() {
   return value;
 }
 
-type TransactionContextValue = { transactions: TrackedTransaction[]; submit: (label: string, method: string, args: CalldataEncodable[], connectedAddress?: string) => Promise<TrackedTransaction>; drawerOpen: boolean; setDrawerOpen: (open: boolean) => void };
+type TransactionContextValue = { transactions: TrackedTransaction[]; submit: (descriptor: PendingWriteDescriptor, connectedAddress?: string) => Promise<TrackedTransaction>; drawerOpen: boolean; setDrawerOpen: (open: boolean) => void };
 const TransactionContext = createContext<TransactionContextValue | null>(null);
 
 function loadTransactions(): TrackedTransaction[] {
@@ -167,12 +171,13 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
   useEffect(() => { resumableTransactions(transactions).forEach(resume); }, [resume, transactions]);
   useEffect(() => () => { pollControllers.current.forEach((controller) => controller.abort()); pollControllers.current.clear(); }, []);
 
-  const submit = useCallback(async (label: string, method: string, args: CalldataEncodable[], connectedAddress?: string) => {
+  const submit = useCallback(async (descriptor: PendingWriteDescriptor, connectedAddress?: string) => {
     const account = connectedAddress || address;
     if (!account) throw new Error('Connect a wallet before sending a write.');
     if (chainId !== CHAIN_ID) throw new Error(`Switch wallet to ${CHAIN_ID} before sending a write.`);
     const client = walletClient(account);
-    const id = await client.writeContract({ address: CONTRACT_ADDRESS, functionName: method, args, value: 0n });
+    const { label, method, args } = descriptor;
+    const id = await client.writeContract({ address: descriptor.contract, functionName: descriptor.method, args: descriptor.args, value: descriptor.value });
     const tracked: TrackedTransaction = { id, label, method, args: args as unknown[], phase: 'SUBMITTED', protocolStatus: 'SUBMITTED', executionResult: 'NOT_VOTED', result: '—', submittedAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
     setTransactions((current) => {
       const value = mergeTrackedTransaction(current, [tracked]);

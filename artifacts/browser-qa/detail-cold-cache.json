@@ -1,0 +1,9 @@
+{
+  "result": "PASS",
+  "targetCase": "86bb1eaddcd802361a5105a8e492cc67f2d3fc647e2a20111bd1158ea4e07534",
+  "global429": 5,
+  "directRecordRendered": true,
+  "notFoundRendered": false,
+  "walletPanelVisible": true,
+  "consoleErrors": 0
+}
