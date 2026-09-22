@@ -43,14 +43,17 @@ The lifecycle is: authenticate an immutable evidence identity, register typed
 dependencies, open a permissionless challenge when evidence changes, adjudicate
 materiality through GenLayer, propagate only the relationship-specific impact,
 and use explicit successor evidence and recovery to resolve a particular active
-cause without erasing history.
+cause without erasing history. The resulting lifecycle is evidence change ->
+semantic materiality -> typed bounded propagation -> `QUESTION` -> `QUARANTINE`
+-> `SUPERSEDE` or authorized `INVALIDATE`.
 
 ## Release status
 
 This release contains one canonical Intelligent Contract at
-[contracts/palinode_v2.py](contracts/palinode_v2.py). The former V1 deployment at
-`0x9c9d1993cd938846D1163Bba9AA81AC6d165de88` is archived historical evidence;
-it is not upgraded in place. The derived application lives
+[contracts/palinode_v2.py](contracts/palinode_v2.py). The former V1 deployment is
+the **ARCHIVED PRE-REVIEW DEPLOYMENT** at
+`0x9c9d1993cd938846D1163Bba9AA81AC6d165de88`; it is historical evidence and is
+not upgraded in place. The derived application lives
 under [frontend](frontend); it does not replace canonical contract state. There
 is no indexer database, ERC20 integration, or cross-contract messaging in this
 phase. The source is published at https://github.com/GIFTEDLOV/Palinode. The
@@ -156,29 +159,65 @@ cause-aware recovery case can resolve only the adverse cause it proves
 corrected. The original evidence, revocation case, and status history remain
 inspectable. This is succession, not rewriting.
 
+## Reviewer hardening
+
+V4 prevents successor hijacking and authorizes dependency assertions through
+the child controller. It verifies evidence digest, exact byte length, and
+source-size consistency before semantic review, and only reviews `CLEARED`
+evidence. Late edges inherit individually keyed active causes; recovery waits
+for complete adverse propagation. Third-party challenges have explicit
+standing, can question reliance, and cannot impersonate source-authoritative
+`INVALIDATE`. Historical authority-version authentication is preserved across
+benign rotation and distinct from revocation. Mirrors are bounded and
+authorized for retrieval only; semantic prompts are structured and bounded.
+Finalized transactions are tracked by ID, and temporary read failures never
+trigger automatic resubmission.
+
 ## Live Studionet proof
 
 The recorded live proof is:
 
-1. Evidence V1 authenticated as `CLEARED`.
-2. Revocation finalized as `CONCLUSIVE` / `MATERIAL` / `INVALIDATE` with
+1. Authority A registered and Evidence V1 authenticated as `CLEARED`.
+2. A dependent party created cross-party typed dependencies; unauthorized
+   dependency and successor attempts were rejected.
+3. A valid successor lineage link was accepted without changing predecessor
+   reliance, and non-`CLEARED` semantic review was rejected.
+4. Revocation finalized as `CONCLUSIVE` / `MATERIAL` / `INVALIDATE` with
    `MATERIAL_WITHDRAWAL`.
-3. Typed propagation changed the Claim to `QUESTIONED` and the Decision to
-   `QUARANTINED`.
-4. Evidence V2 authenticated independently as `CLEARED`.
-5. Recovery finalized as `CONCLUSIVE` / `SUPERSEDE` /
-   `RECOVERY_RESOLVED_SUPERSEDE`.
-6. V1 authentication remained `CLEARED` while its current reliance became
+5. Typed propagation changed the Claim to `QUESTIONED` and the Decision to
+   `QUARANTINED`; a late edge inherited the active cause.
+6. Premature recovery was rejected, then Evidence V2 authenticated and
+   successful successor recovery resolved the intended cause.
+7. V1 authentication remained `CLEARED` while its current reliance became
    `SUPERSEDED`.
-7. An unrelated Authority C challenge was classified as
-   `MATERIAL_THIRD_PARTY_CHALLENGE` with `QUESTION`; it could not produce
-   source-authoritative `INVALIDATE` semantics.
-8. A registered BODY A served as BODY B at the same URI and the contract
+8. An unrelated Authority C challenge was classified as
+   `CONCLUSIVE` / `MATERIAL` / `QUESTION` with
+   `MATERIAL_THIRD_PARTY_CHALLENGE`; it could not produce source-authoritative
+   `INVALIDATE` semantics.
+9. A registered BODY A served as BODY B at the same URI and the contract
    committed `SOURCE_DIGEST_MISMATCH` without an adverse cause or semantic
-   mutation.
+   mutation; the semantic call was prevented before adjudication.
+10. The primary real browser-wallet proof finalized a completed-case
+    `process_impact` no-op with return `0` and no canonical mutation.
 
 This demonstrates that historical authentication can remain true while current
 reliance evolves.
+
+### Real browser-wallet proof
+
+Primary operator-controlled EIP-1193 proof:
+
+- Transaction: `0x5550723fae8da058933a3b8adc7a54280170573132ad224b2e00756ff0e63451`
+- Sender: `0x4f7a14c8cd83caa18Fafc35aA91a8483Cc95E3E5`
+- Target: `0x05243cB6db90EE210a22Aa3c16fdc4F893d7b13b`
+- Method: `process_impact`
+- Arguments: `["86bb1eaddcd802361a5105a8e492cc67f2d3fc647e2a20111bd1158ea4e07534", 1]`
+- Result: `FINALIZED` / `FINISHED_WITH_RETURN` / `0`
+- Canonical mutation: `NONE`
+
+A separate manual duplicate safe QA approval also finalized with return `0` and
+no canonical mutation; both records are preserved in
+`evidence/studionet/v4/frontend-wallet-smoke-postflight.json`.
 
 ## Lifecycle
 
@@ -241,8 +280,8 @@ mutation or replace a contract read.
 
 ## Application transaction state
 
-The future UI must track the GenLayer transaction ID returned by submission and
-persist it across restarts. `ACCEPTED` means that a proposed outcome reached
+The UI tracks the GenLayer transaction ID returned by submission and persists
+it across restarts. `ACCEPTED` means that a proposed outcome reached
 consensus; it is not proof that execution succeeded or that the transaction is
 final. The client state model therefore keeps separate fields for submission,
 consensus acceptance, execution success, and finalization, and resumes polling
@@ -290,15 +329,19 @@ bounded contract model rather than a frontend database.
 The release browser pass uses Playwright against the local production build and
 the production alias across desktop, tablet, and mobile viewports. The V4 pass
 also covers provider wiring, lifecycle display, canonical impact, pagination,
-and explicit form validation. A real wallet write remains a controlled operator
-smoke against a completed case; no protocol changes are made by the frontend.
+and explicit form validation. A real EIP-1193 wallet write was proven through
+the production frontend against a completed case; it returned `0` and made no
+canonical mutation. No protocol changes are made by the frontend.
 
 ## Testing
 
 The recorded freeze gates are 55 direct tests, 5 invariant tests, 34
 adversarial tests, 2 property tests, and 46/49 security mutations killed,
-with 3 obsolete overflow-summary mutations retired and 0 survivors.
-These are engineering test results, not formal verification.
+with 3 obsolete overflow-summary mutations retired and 0 survivors. The final
+frontend suite has 49 passing tests, and deterministic browser E2E has 96
+passing responsive assertions with 0 unexpected console errors; desktop,
+tablet, mobile, rate-limit, and real-wallet provider checks passed. These are
+engineering test results, not formal verification.
 
 ## Run locally
 
@@ -365,10 +408,10 @@ automatically resubmits them.
 - No legal, regulatory, or factual truth guarantee is implied by a semantic
   verdict; PALINODE records a bounded adjudication of registered dependency
   impact.
-- The frontend cannot provide a real signature or account-funding test without
-  an operator wallet extension. It handles disconnected, wrong-network,
-  account-change, and disconnect states, but the release QA does not claim a
-  live wallet signature was made.
+- The real wallet proof is a controlled operator smoke, not a claim that the
+  frontend can custody keys. The operator wallet extension signed one safe
+  completed-case `process_impact` transaction through EIP-1193; the recorded
+  result was finalized, returned `0`, and caused no canonical mutation.
 
 See the [documentation index](docs/ARCHITECTURE.md) for the complete protocol
 model.
