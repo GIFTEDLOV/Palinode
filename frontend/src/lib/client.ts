@@ -207,6 +207,15 @@ export function txSnapshot(transaction: GenLayerTransaction, prior: TrackedTrans
   };
 }
 
+export function trackingDelayedSnapshot(prior: TrackedTransaction): TrackedTransaction {
+  return {
+    ...prior,
+    phase: 'TRACKING DELAYED',
+    updatedAt: new Date().toISOString(),
+    error: undefined,
+  };
+}
+
 export function isTerminalPhase(phase: TrackedTransaction['phase']) {
   return ['FINALIZED SUCCESS', 'FINALIZED ERROR', 'UNDETERMINED', 'CANCELED'].includes(phase);
 }
@@ -221,7 +230,11 @@ export async function pollTransaction(client: GenLayerClient<typeof studionet>, 
       onUpdate(current);
       if (isTerminalPhase(current.phase)) return current;
     } catch (error) {
-      current = { ...current, phase: 'TIMEOUT', updatedAt: new Date().toISOString(), error: error instanceof Error ? error.message : 'Unable to read transaction state.' };
+      // A failed status read does not establish that the transaction timed out
+      // or failed. Keep the same persisted ID active and make the uncertainty
+      // explicit without leaking transport/library errors into the UI.
+      void error;
+      current = trackingDelayedSnapshot(current);
       onUpdate(current);
     }
     await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));

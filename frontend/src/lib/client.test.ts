@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { protocolPhase, txSnapshot } from './client';
+import { protocolPhase, trackingDelayedSnapshot, txSnapshot } from './client';
 import type { TrackedTransaction } from '../types';
 import type { GenLayerTransaction } from 'genlayer-js/types';
 
@@ -22,5 +22,12 @@ describe('GenLayer lifecycle adapter', () => {
     const failure = { statusName: 'FINALIZED', txExecutionResultName: 'FINISHED_WITH_ERROR' } as unknown as GenLayerTransaction;
     expect(txSnapshot(success, prior).phase).toBe('FINALIZED SUCCESS');
     expect(txSnapshot(failure, prior).phase).toBe('FINALIZED ERROR');
+  });
+
+  it('marks an unavailable status read as tracking delayed without exposing the transport error', () => {
+    const delayed = trackingDelayedSnapshot({ ...prior, error: 'An unknown RPC error occurred. Version: viem@2.56.8' });
+    expect(delayed.phase).toBe('TRACKING DELAYED');
+    expect(delayed.error).toBeUndefined();
+    expect(delayed.id).toBe(prior.id);
   });
 });

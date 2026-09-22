@@ -135,6 +135,7 @@ export type LifecyclePhase =
   | 'ACCEPTED / PROVISIONAL'
   | 'FINALIZATION AVAILABLE'
   | 'APPEAL PERIOD'
+  | 'TRACKING DELAYED'
   | 'TIMEOUT';
 
 export type TransactionLifecycle = {

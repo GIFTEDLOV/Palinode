@@ -1,0 +1,173 @@
+{
+  "result": "PASS",
+  "network": "Studionet",
+  "chain_id": 61999,
+  "contract_address": "0x05243cB6db90EE210a22Aa3c16fdc4F893d7b13b",
+  "case_id": "86bb1eaddcd802361a5105a8e492cc67f2d3fc647e2a20111bd1158ea4e07534",
+  "primary_safe_wallet_tx": {
+    "tx_id": "0x5550723fae8da058933a3b8adc7a54280170573132ad224b2e00756ff0e63451",
+    "sender": "0x4f7a14c8cd83caa18Fafc35aA91a8483Cc95E3E5",
+    "target": "0x05243cB6db90EE210a22Aa3c16fdc4F893d7b13b",
+    "method": "process_impact",
+    "args": [
+      "86bb1eaddcd802361a5105a8e492cc67f2d3fc647e2a20111bd1158ea4e07534",
+      1
+    ],
+    "value": "0 GEN",
+    "protocol_status": "FINALIZED",
+    "execution_result": "FINISHED_WITH_RETURN",
+    "receipt_evidence": {
+      "leader_receipt_status": "return",
+      "leader_execution_result": "SUCCESS",
+      "return_readable": "0",
+      "return_raw": [1]
+    },
+    "return_value": "0",
+    "canonical_mutation": false,
+    "created_at": "2026-09-22T07:07:03.788824+00:00",
+    "nonce": 17,
+    "tx_execution_hash": "0xd161d3ab5dc9812367404eb32a2ef4ba01c740478dbd17d0cad2bf021996b5fe"
+  },
+  "duplicate_safe_wallet_tx": {
+    "tx_id": "0x1e505972ba15d231e029469be17fde7e9e6e911b95cb28d040111e37ae3662bc",
+    "sender": "0x4f7a14c8cd83caa18Fafc35aA91a8483Cc95E3E5",
+    "target": "0x05243cB6db90EE210a22Aa3c16fdc4F893d7b13b",
+    "method": "process_impact",
+    "args": [
+      "86bb1eaddcd802361a5105a8e492cc67f2d3fc647e2a20111bd1158ea4e07534",
+      1
+    ],
+    "value": "0 GEN",
+    "protocol_status": "FINALIZED",
+    "execution_result": "FINISHED_WITH_RETURN",
+    "receipt_evidence": {
+      "leader_receipt_status": "return",
+      "leader_execution_result": "SUCCESS",
+      "return_readable": "0",
+      "return_raw": [1]
+    },
+    "return_value": "0",
+    "canonical_mutation": false,
+    "created_at": "2026-09-22T08:06:42.077683+00:00",
+    "nonce": 18,
+    "tx_execution_hash": "0x3072d097b251e3658deaa4c8e4fdfa0197990c342a7b6a5df68c211aaee0b741"
+  },
+  "manual_duplicate_submission": true,
+  "resubmissions": 0,
+  "submission_order": {
+    "first_real_safe_tx": "0x5550723fae8da058933a3b8adc7a54280170573132ad224b2e00756ff0e63451",
+    "second_duplicate_safe_tx": "0x1e505972ba15d231e029469be17fde7e9e6e911b95cb28d040111e37ae3662bc",
+    "basis": "created_at and nonce; both were independently signed by the same browser wallet"
+  },
+  "pre_state": {
+    "source": "evidence/studionet/v4/frontend-wallet-smoke-preflight.json plus the prior fresh wrong-wallet postmortem baseline read",
+    "case_status": "COMPLETE",
+    "queue": {
+      "cursor": "3",
+      "queue_length": "3",
+      "processed_steps": "3"
+    },
+    "case_result_history": {
+      "recent_count": "1",
+      "slot_0": "16|CONCLUSIVE|MATERIAL|INVALIDATE|MATERIAL_REVOCATION",
+      "total_count": "1"
+    },
+    "target_evidence_id": "ad68b1c64e951fc88b3cb94cbb481978555c4fef7d82cbf68938f1e5c2b492ee",
+    "target_authentication_status": "CLEARED",
+    "target_reliance_status": "SUPERSEDED",
+    "target_status_transition_count": "2",
+    "target_assessment_transition_count": "2",
+    "active_causes_page": {
+      "count": "1",
+      "cursor": "0",
+      "next_cursor": "1",
+      "slot_0": "085a386fb3f6f7638fbfcb41b2b69dbfa0ba17e2641178c161aef14d77ceef53|QUESTIONED"
+    },
+    "status_history": {
+      "recent_count": "2",
+      "slot_0": "17|ad68b1c64e951fc88b3cb94cbb481978555c4fef7d82cbf68938f1e5c2b492ee|ACTIVE|INVALIDATED|ROOT_INVALIDATE|86bb1eaddcd802361a5105a8e492cc67f2d3fc647e2a20111bd1158ea4e07534",
+      "slot_1": "25|ad68b1c64e951fc88b3cb94cbb481978555c4fef7d82cbf68938f1e5c2b492ee|INVALIDATED|SUPERSEDED|RECOVERY_SUPERSEDE|8541568d68dacb839e6d0434c4a15019ba7ba4424a04667b574bbbeddd7acb1e",
+      "total_count": "2"
+    },
+    "assessment_history": {
+      "recent_count": "2",
+      "slot_0": "3|ad68b1c64e951fc88b3cb94cbb481978555c4fef7d82cbf68938f1e5c2b492ee|UNASSESSED|PENDING|",
+      "slot_1": "4|ad68b1c64e951fc88b3cb94cbb481978555c4fef7d82cbf68938f1e5c2b492ee|PENDING|CLEARED|",
+      "total_count": "2"
+    }
+  },
+  "post_state": {
+    "read_at_utc": "2026-09-22T08:15:32.518Z",
+    "case_status": "COMPLETE",
+    "queue": {
+      "cursor": "3",
+      "queue_length": "3",
+      "processed_steps": "3"
+    },
+    "case_result_history": {
+      "recent_count": "1",
+      "slot_0": "16|CONCLUSIVE|MATERIAL|INVALIDATE|MATERIAL_REVOCATION",
+      "total_count": "1"
+    },
+    "target_evidence_id": "ad68b1c64e951fc88b3cb94cbb481978555c4fef7d82cbf68938f1e5c2b492ee",
+    "target_authentication_status": "CLEARED",
+    "target_reliance_status": "SUPERSEDED",
+    "target_status_transition_count": "2",
+    "target_assessment_transition_count": "2",
+    "active_causes": {
+      "active_count": "1",
+      "invalidated_count": "0",
+      "questioned_count": "1",
+      "under_review_count": "0",
+      "quarantined_count": "0"
+    },
+    "active_causes_page": {
+      "count": "1",
+      "cursor": "0",
+      "next_cursor": "1",
+      "slot_0": "085a386fb3f6f7638fbfcb41b2b69dbfa0ba17e2641178c161aef14d77ceef53|QUESTIONED"
+    },
+    "status_history": {
+      "recent_count": "2",
+      "slot_0": "17|ad68b1c64e951fc88b3cb94cbb481978555c4fef7d82cbf68938f1e5c2b492ee|ACTIVE|INVALIDATED|ROOT_INVALIDATE|86bb1eaddcd802361a5105a8e492cc67f2d3fc647e2a20111bd1158ea4e07534",
+      "slot_1": "25|ad68b1c64e951fc88b3cb94cbb481978555c4fef7d82cbf68938f1e5c2b492ee|INVALIDATED|SUPERSEDED|RECOVERY_SUPERSEDE|8541568d68dacb839e6d0434c4a15019ba7ba4424a04667b574bbbeddd7acb1e",
+      "total_count": "2"
+    },
+    "assessment_history": {
+      "recent_count": "2",
+      "slot_0": "3|ad68b1c64e951fc88b3cb94cbb481978555c4fef7d82cbf68938f1e5c2b492ee|UNASSESSED|PENDING|",
+      "slot_1": "4|ad68b1c64e951fc88b3cb94cbb481978555c4fef7d82cbf68938f1e5c2b492ee|PENDING|CLEARED|",
+      "total_count": "2"
+    }
+  },
+  "comparisons": {
+    "tx_a_correct_target_method_args": true,
+    "tx_b_correct_target_method_args": true,
+    "tx_a_correct_sender": true,
+    "tx_b_correct_sender": true,
+    "case_status_unchanged": true,
+    "result_status_unchanged": true,
+    "queue_cursor_unchanged": true,
+    "queue_length_unchanged": true,
+    "processed_steps_unchanged": true,
+    "case_result_history_unchanged": true,
+    "active_causes_unchanged": true,
+    "target_status_history_unchanged": true,
+    "target_assessment_history_unchanged": true,
+    "target_authentication_unchanged": true,
+    "target_reliance_unchanged": true,
+    "no_new_node": true,
+    "no_new_edge": true,
+    "no_new_recovery": true
+  },
+  "tx_a_canonical_mutation": false,
+  "tx_b_canonical_mutation": false,
+  "combined_unintended_state_changes": "NONE",
+  "real_eip1193_provider_used": {
+    "value": true,
+    "basis": "The operator supplied two independently signed transaction IDs from the controlled browser wallet; both chain records identify the expected sender.",
+    "limitation": "The Studionet transaction record does not expose an EIP-1193-provider flag, so this is operator/browser-path evidence rather than an on-chain provider attestation."
+  },
+  "note": "The two exact transaction IDs were read directly from Studionet and were already FINALIZED. No resubmission or polling replacement occurred. The second transaction is documented as a separate manual duplicate approval, not an automatic retry. The current RPC did not expose gen_getTransactionLifecycle (JSON-RPC -32601); finality and execution were established from the direct transaction record and validator leader receipts.",
+  "source_sha256": "0f23a120776b09be989e6112b34d27ae415e1808232be591f94d1e17d80c5601"
+}
