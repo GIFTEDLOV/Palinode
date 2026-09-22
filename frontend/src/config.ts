@@ -11,6 +11,10 @@ export const REVIEWER_FIXTURE_URL = 'https://palinode-reviewer-fixture.vercel.ap
 export const PAGE_SIZE = 64;
 export const POLL_INTERVAL_MS = 4_000;
 export const MAX_IMPACT_STEPS = 32;
+export const MAX_DECLARED_SOURCE_BYTES = 65_536;
+export const MAX_REASON_NOTE_LENGTH = 240;
+export const CASE_REASON_CODES = ['CHANGED', 'CORRECTED', 'WITHDRAWN', 'SUPERSEDED', 'COMPROMISED', 'INVALIDATED'] as const;
+export type CaseReasonCode = (typeof CASE_REASON_CODES)[number];
 
 export const NODE_TYPES = ['EVIDENCE', 'CLAIM', 'DECISION', 'ATTESTATION', 'AUTHORIZATION'] as const;
 export type NodeType = (typeof NODE_TYPES)[number];

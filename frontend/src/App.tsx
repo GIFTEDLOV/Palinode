@@ -2,7 +2,8 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components';
 import { ProtocolProvider, TransactionProvider, WalletProvider } from './context';
 import { EvidenceCanonicalViews, RecoveryCanonicalViews, RevocationCanonicalViews } from './detailViews';
-import { ActivityPage, AuthoritiesPage, DecisionPage, DocsPage, EvidencePage, GraphPage, IntegratePage, LandingPage, OverviewPage, ProofPage, RecoveriesPage, RevocationsPage, SuccessorPage } from './pages';
+import { ActivityPage, AuthoritiesPage, DecisionPage, DocsPage, EvidencePage, GraphPage, IntegratePage, LandingPage, OverviewPage, ProofPage, RecoveriesPage, SuccessorPage } from './pages';
+import { RevocationsPage } from './revocationsPage';
 import { V4AuthorityDetailPage, V4DecisionDetailPage, V4EvidenceDetailPage, V4RecoveryDetailPage, V4RevocationDetailPage } from './detailPages';
 
 export default function App() {

@@ -145,3 +145,9 @@ release evidence and was not an automatic resubmission.
 The V1 deployment at `0x9c9d1993cd938846D1163Bba9AA81AC6d165de88` is the
 **ARCHIVED PRE-REVIEW DEPLOYMENT**. The current release is V4 at the contract
 address listed above; V1 is not the production source or runtime target.
+
+## Steward remediation
+
+The Revocations page now provides a validated `open_revocation_case` flow that
+submits the frozen V4 seven-argument write for CLEARED evidence. Repository
+tests assert the exact method and argument order.

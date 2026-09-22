@@ -1,4 +1,4 @@
-import { NODE_TYPES, RELATIONSHIPS } from '../config';
+import { CASE_REASON_CODES, NODE_TYPES, RELATIONSHIPS } from '../config';
 
 export function required(value: string, label: string) { return value.trim() ? null : `${label} is required.`; }
 export function hexDigest(value: string) { return /^[0-9a-f]{64}$/i.test(value.trim()) ? null : 'SHA-256 must be exactly 64 hexadecimal characters.'; }
@@ -16,4 +16,5 @@ export function authorityId(value: string) { return nodeId(value, 'Authority ID'
 export function caseId(value: string) { return nodeId(value, 'Case ID'); }
 export function supportedNodeType(value: string) { return (NODE_TYPES as readonly string[]).includes(value) ? null : 'Unsupported node type.'; }
 export function supportedRelationship(value: string) { return (RELATIONSHIPS as readonly string[]).includes(value) ? null : 'Unsupported relationship.'; }
+export function supportedOpeningReason(value: string) { return (CASE_REASON_CODES as readonly string[]).includes(value) ? null : 'Unsupported opening reason.'; }
 export function firstError(...errors: Array<string | null | undefined>) { return errors.find(Boolean) || null; }
