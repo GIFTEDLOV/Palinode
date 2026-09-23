@@ -1,0 +1,207 @@
+name: PALINODE V4 Release Gates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GENVM_VERSION: v0.2.16
+
+jobs:
+  contract:
+    name: contract
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out tracked source
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.14.x
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Create clean stable Python environment
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install --requirement requirements-dev.txt
+
+      - name: Verify pinned stable toolchain
+        run: |
+          .venv/bin/python -m pip check
+          .venv/bin/python - <<'PY'
+          from importlib.metadata import version
+
+          expected = {
+              "genlayer-test": "0.29.2",
+              "genlayer-py": "0.16.3",
+              "genvm-linter": "0.11.0",
+              "pytest": "9.1.1",
+              "pyright": "1.1.414",
+          }
+          actual = {name: version(name) for name in expected}
+          assert actual == expected, (actual, expected)
+          print(actual)
+          PY
+
+      - name: Contract source hash and release-manifest gate
+        run: .venv/bin/python scripts/validate_release_manifest.py
+
+      - name: Direct V4 tests
+        run: .venv/bin/python -m pytest tests/direct -q
+
+      - name: Invariant V4 tests
+        run: .venv/bin/python -m pytest tests/invariants -q
+
+      - name: Adversarial V4 tests
+        run: .venv/bin/python -m pytest tests/adversarial -q
+
+      - name: Property V4 tests
+        run: .venv/bin/python -m pytest tests/property -q
+
+      - name: Reviewer-remediation V2 tests
+        run: .venv/bin/python -m pytest tests/v2 -q
+
+      - name: GenVM lint
+        run: .venv/bin/genvm-lint lint contracts/palinode_v2.py
+
+      - name: GenVM validate
+        run: .venv/bin/genvm-lint validate contracts/palinode_v2.py
+
+      - name: GenVM typecheck
+        run: .venv/bin/genvm-lint typecheck contracts/palinode_v2.py
+
+      - name: Generate and verify V4 schema
+        run: |
+          mkdir -p artifacts
+          .venv/bin/genvm-lint schema contracts/palinode_v2.py --output artifacts/palinode_schema.json
+          .venv/bin/python scripts/validate_release_manifest.py
+
+      - name: Mutation checks
+        run: .venv/bin/python scripts/mutation_checks_v2.py
+
+      - name: Integration tests (GLSim skip remains visible)
+        run: .venv/bin/python -m pytest tests/integration -q -rs
+
+      - name: Upload contract evidence and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: palinode-contract-${{ github.run_id }}
+          if-no-files-found: warn
+          path: |
+            artifacts/palinode_schema.json
+            evidence/studionet/v4/**
+
+  frontend:
+    name: frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out tracked source
+        uses: actions/checkout@v4
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install locked frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Secret scan
+        run: python scripts/secret_scan.py
+
+      - name: Network and address guard
+        run: python scripts/check_runtime_config.py
+
+      - name: Frontend tests
+        working-directory: frontend
+        run: npm test
+
+      - name: Frontend typecheck
+        working-directory: frontend
+        run: npm run typecheck
+
+      - name: Frontend lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Frontend production build
+        working-directory: frontend
+        run: npm run build
+
+      - name: Upload frontend build
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: palinode-frontend-${{ github.run_id }}
+          if-no-files-found: warn
+          path: frontend/dist/**
+
+  browser:
+    name: browser
+    needs: frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out tracked source
+        uses: actions/checkout@v4
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install locked frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Build local production fixture
+        working-directory: frontend
+        run: npm run build
+
+      - name: Start local fixture server
+        working-directory: frontend
+        run: |
+          nohup npm run local-production-server > ../palinode-browser-server.log 2>&1 &
+          echo $! > ../palinode-browser-server.pid
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:4175/ > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat ../palinode-browser-server.log
+          exit 1
+
+      - name: Deterministic browser release suite
+        working-directory: frontend
+        run: npm run browser:e2e
+
+      - name: Rate-limit regression suite
+        working-directory: frontend
+        run: npm run browser:rate-limit
+
+      - name: Upload browser screenshots and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: palinode-browser-${{ github.run_id }}
+          if-no-files-found: warn
+          path: |
+            artifacts/browser-qa/**
+            artifacts/final-screenshots/**
+            palinode-browser-server.log

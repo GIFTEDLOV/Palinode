@@ -8,8 +8,9 @@ the application and deployment source are `contracts/palinode_v2.py`.
 
 | Field | Value |
 |---|---|
-| Source-freeze commit | `14bb4574a8d248c978b55ff1fb70f32c0293f313` |
-| Frontend migration commit | `local V4 migration commit (this release)` |
+| Contract source freeze commit | `14bb4574a8d248c978b55ff1fb70f32c0293f313` |
+| Initial V4 release source commit | `be8a14b09f4ad1f40a9fdb0429dd16d3942795a9` |
+| Current repository / frontend release HEAD | final HEAD of this hardening pass; see the release manifest |
 | Contract source SHA-256 | `0f23a120776b09be989e6112b34d27ae415e1808232be591f94d1e17d80c5601` |
 | Source path | `contracts/palinode_v2.py` |
 | Studionet address | `0x05243cB6db90EE210a22Aa3c16fdc4F893d7b13b` |
@@ -23,11 +24,12 @@ the application and deployment source are `contracts/palinode_v2.py`.
 
 ## Gate evidence
 
-- Direct tests: `55 passed`.
+- Direct tests: `28 passed`.
 - Invariant tests: `5 passed`.
 - Adversarial tests: `34 passed`.
 - Property tests: `2 passed`.
-- Combined local protocol suite: `69 passed`.
+- Reviewer-remediation V2 tests: `27 passed`.
+- Combined local V4 protocol suite: `96 passed`.
 - Mutation harness: `49 total`, `46 killed`, `3 retired`, `0 survived`.
 - Retired mutations: obsolete overflow-summary mutations after V4 moved to
   individually keyed active causes plus severity counters.

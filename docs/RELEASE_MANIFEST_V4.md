@@ -1,71 +1,63 @@
 # PALINODE V4 Release Manifest
 
-This manifest is the authoritative release record for the frozen PALINODE V4
-frontend and protocol publication.
+This document explains the release identities and points to the canonical
+machine-readable index at
+`evidence/studionet/v4/release-manifest.json`. The JSON index references the
+existing proof records under `evidence/studionet/v4/`; it does not duplicate
+their transaction payloads.
 
-## Identity
+## Current release status
 
-- Project: PALINODE — Semantic Revocation Graph
-- Release source commit: `be8a14b09f4ad1f40a9fdb0429dd16d3942795a9`
-- Publication documentation commit: the final commit containing this manifest
-- Publication date: `2026-09-22`
-- Freeze status: `READY`
+V4 is deployed on Studionet, and the production frontend is live at
+https://palinode-app.vercel.app. The contract is frozen at
+`0x05243cB6db90EE210a22Aa3c16fdc4F893d7b13b`; this hardening pass does not
+change or redeploy it.
 
-## Deployment
+The three repository identities are distinct:
 
-- Production URL: https://palinode-app.vercel.app
-- Production deployment ID: `dpl_HjZaHi6m7bagByh9icJ8RAJqQrFf`
-- Network: Studionet
-- Chain ID: `61999`
-- V4 contract: `0x05243cB6db90EE210a22Aa3c16fdc4F893d7b13b`
-- Frozen source: `contracts/palinode_v2.py`
-- Source SHA-256: `0f23a120776b09be989e6112b34d27ae415e1808232be591f94d1e17d80c5601`
+- Contract source freeze: `14bb4574a8d248c978b55ff1fb70f32c0293f313`.
+- Initial V4 release source: `be8a14b09f4ad1f40a9fdb0429dd16d3942795a9`.
+- Current repository / frontend release HEAD: the final HEAD of this pass,
+  recorded in the JSON index and the GitHub release.
+
+## Frozen contract
+
+| Field | Value |
+|---|---|
+| Source path | `contracts/palinode_v2.py` |
+| Source SHA-256 | `0f23a120776b09be989e6112b34d27ae415e1808232be591f94d1e17d80c5601` |
+| Network | Studionet |
+| Chain ID | `61999` |
+| RPC | `https://studio.genlayer.com/api` |
+| Address | `0x05243cB6db90EE210a22Aa3c16fdc4F893d7b13b` |
+| Schema | 46 methods: 21 writes, 25 views |
 
 ## Verified assurance
 
-- Backend: 55 direct, 5 invariant, 34 adversarial, and 2 property tests
-- Mutation catalogue: 49 total, 46 killed, 3 retired obsolete mutations, 0 survived
-- Frontend tests: 49 passed
-- Deterministic browser E2E: 96 assertions passed, 0 unexpected console errors
-- Responsive QA: desktop, tablet, and mobile passed
-- Rate-limit regression: passed
-- Real EIP-1193 wallet proof: passed
+- Contract collection: 28 direct, 5 invariant, 34 adversarial, 2 property,
+  and 27 reviewer-remediation V2 tests; 96 total.
+- Mutation catalogue: 49 total, 46 killed, 3 retired, 0 survived.
+- Integration: 6 passed and 1 known Windows GLSim skip.
+- Frontend: 57 tests passed, typecheck/lint/build passed.
+- Browser: 96 deterministic route assertions, 0 unexpected console errors,
+  desktop/tablet/mobile passed, and rate-limit regression passed.
+- CI write paths use fixtures and mocks only.
 
-These results are engineering assurance, not formal verification.
+## Live proof and fee policy
 
-## Primary real-wallet proof
+The primary wallet proof transaction is
+`0x5550723fae8da058933a3b8adc7a54280170573132ad224b2e00756ff0e63451`.
+It finalized `process_impact` with `FINISHED_WITH_RETURN`, return `0`, and no
+canonical mutation. The canonical V4 proof state remains the authenticated V1
+and V2 evidence lineage, material withdrawal and typed propagation, successor
+recovery, third-party `QUESTION` standing, and same-URL digest mismatch before
+semantic adjudication.
 
-- Transaction: `0x5550723fae8da058933a3b8adc7a54280170573132ad224b2e00756ff0e63451`
-- Sender: `0x4f7a14c8cd83caa18Fafc35aA91a8483Cc95E3E5`
-- Target: `0x05243cB6db90EE210a22Aa3c16fdc4F893d7b13b`
-- Method: `process_impact`
-- Arguments: `["86bb1eaddcd802361a5105a8e492cc67f2d3fc647e2a20111bd1158ea4e07534", 1]`
-- Protocol status: `FINALIZED`
-- Execution result: `FINISHED_WITH_RETURN`
-- Return: `0`
-- Canonical mutation: `NONE`
+Application value for PALINODE writes is `0`. Stable `genlayer-js` `1.1.8`
+already estimates gas and reads `eth_gasPrice` through `writeContract`; the
+recorded Studionet behavior is gas price `0`. The frontend still persists one
+transaction ID, treats `ACCEPTED` as provisional, and requires finalized
+`FINISHED_WITH_RETURN` for durable write success.
 
-A separate manual duplicate safe QA transaction was also finalized state-neutrally:
-
-- Transaction: `0x1e505972ba15d231e029469be17fde7e9e6e911b95cb28d040111e37ae3662bc`
-- Classification: `MANUAL_DUPLICATE_SUBMISSION=YES`
-- Automatic resubmissions: `0`
-
-## Reviewer fixture
-
-- Reviewer fixture: https://palinode-reviewer-fixture.vercel.app
-- Authority C standing and byte-mismatch evidence are committed under
-  `evidence/studionet/v4/`.
-- The V1 evidence and failed pre-review wallet attempt remain historical records;
-  they are not hidden or rewritten.
-
-## Archived deployment
-
-- Archived pre-review V1 contract:
-  `0x9c9d1993cd938846D1163Bba9AA81AC6d165de88`
-- V1 is not the current production contract.
-
-## Publication
-
-- GitHub: https://github.com/GIFTEDLOV/Palinode
-- Final publication is a normal push to `origin/main`; no force push is used.
+Archived V1/V2/V3 canaries and deployment records are historical only. They are
+not active runtime defaults, and no license is added by this release pass.

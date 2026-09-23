@@ -5,7 +5,8 @@ final application success. Current GenLayer documentation distinguishes
 consensus acceptance, execution outcome, appeal/finalization, and the
 transaction ID used to observe the same transaction.
 
-The future frontend/API should persist one record per submitted transaction:
+The frontend persists one record per submitted transaction and restores the
+same record after a browser restart:
 
 ```json
 {
@@ -47,10 +48,12 @@ alone is never application success. The tracker persists and resumes the same
 transaction ID and never resubmits automatically.
 
 After a timeout or browser restart, the client resumes polling the persisted
-`transaction_id`. It must not automatically submit the same PALINODE write
-again, because doing so could create a second authority, challenge, retry, or
-propagation transaction. Any resubmission must be an explicit user decision
-after the original transaction reaches a terminal protocol state.
+transaction ID. `ACCEPTED` is provisional; only `FINALIZED` together with
+`FINISHED_WITH_RETURN` is durable execution success. The client polls the same
+ID and never automatically submits the same PALINODE write again, because that
+could create a second authority, challenge, retry, or propagation transaction.
+Any resubmission is an explicit user decision after the original transaction
+reaches a terminal protocol state.
 
 The contract remains canonical for PALINODE state. This document defines the
 non-canonical application tracking envelope required for safe presentation and

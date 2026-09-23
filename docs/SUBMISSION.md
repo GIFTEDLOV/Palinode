@@ -65,7 +65,9 @@ https://github.com/GIFTEDLOV/Palinode
 
 Source: `contracts/palinode_v2.py`<br>
 SHA-256: `0f23a120776b09be989e6112b34d27ae415e1808232be591f94d1e17d80c5601`<br>
-Release source commit: `14bb4574a8d248c978b55ff1fb70f32c0293f313`<br>
+Contract source freeze commit: `14bb4574a8d248c978b55ff1fb70f32c0293f313`<br>
+Initial V4 release source commit: `be8a14b09f4ad1f40a9fdb0429dd16d3942795a9`<br>
+Current repository / frontend release HEAD: final HEAD of this hardening pass; see the release manifest<br>
 Archived V1: `0x9c9d1993cd938846D1163Bba9AA81AC6d165de88`
 
 ## NETWORK
@@ -95,9 +97,10 @@ mutation.
 
 ## SECURITY / TESTING
 
-Recorded freeze gates: 55 direct tests, 5 invariant tests, 34 adversarial
-tests, 2 property tests, and 46/49 security mutations killed; 3 obsolete
-overflow-summary mutations were retired and 0 survived. See
+Recorded freeze gates: 28 direct tests, 5 invariant tests, 34 adversarial
+tests, 2 property tests, and 27 reviewer-remediation V2 tests (96 total).
+The mutation result is 46/49 killed; 3 obsolete overflow-summary mutations
+were retired and 0 survived. See
 [SECURITY_AUDIT.md](SECURITY_AUDIT.md), [THREAT_MODEL.md](THREAT_MODEL.md),
 [TRUST_MODEL.md](TRUST_MODEL.md), and [CONTRACT_FREEZE.md](CONTRACT_FREEZE.md).
 These results do not constitute formal verification or a claim of perfect

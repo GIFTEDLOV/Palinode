@@ -9,9 +9,9 @@ deterministic, and bounded.
 
 ## One canonical contract
 
-Phase 1 intentionally keeps registration, lineage, revocation state, semantic
+The frozen V4 release keeps registration, lineage, revocation state, semantic
 result, node status, propagation queue, and recovery-compatible succession in
-`contracts/palinode.py`. This prevents an indexer or second contract from
+`contracts/palinode_v2.py`. This prevents an indexer or second contract from
 becoming an accidental source of truth while the invariants are being proven.
 
 The contract has three layers:
@@ -39,7 +39,7 @@ derived `/.well-known/palinode.json` challenge binds address, origin, nonce,
 
 The GenLayer Intelligent Contract state is canonical. The GenLayer consensus
 result is canonical only once accepted under the protocol's lifecycle and
-finality rules. A future frontend or indexer can materialize views of node,
+finality rules. The production frontend materializes derived views of node,
 edge, case, and queue state, but the contract remains authoritative for writes
 and reads needed for correctness.
 

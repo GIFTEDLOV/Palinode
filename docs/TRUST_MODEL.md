@@ -5,7 +5,7 @@
 | Component | Trust role | Canonical? |
 |---|---|---|
 | GenLayer chain consensus and finality | Orders Intelligent Contract transactions and resolves accepted consensus outcomes | Yes for protocol lifecycle |
-| `contracts/palinode.py` state | Stores node, edge, case, status, lineage, and queue state | Yes for PALINODE application state |
+| `contracts/palinode_v2.py` state | Stores node, edge, case, status, lineage, and queue state | Yes for PALINODE application state |
 | Accepted semantic result | Bounded leader result accepted by validator equivalence logic | Yes after protocol acceptance/finality |
 | Validator committee | Independently checks the leader's bounded proposal | Consensus participant, not an app authority |
 | Web evidence and correction URLs | Untrusted input to the semantic boundary | No |

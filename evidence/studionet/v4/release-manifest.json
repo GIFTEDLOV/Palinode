@@ -1,0 +1,96 @@
+{
+  "version": "4.0.0",
+  "network": "Studionet",
+  "chainId": 61999,
+  "rpc": "https://studio.genlayer.com/api",
+  "contractAddress": "0x05243cB6db90EE210a22Aa3c16fdc4F893d7b13b",
+  "sourcePath": "contracts/palinode_v2.py",
+  "sourceSha256": "0f23a120776b09be989e6112b34d27ae415e1808232be591f94d1e17d80c5601",
+  "contractFreezeCommit": "14bb4574a8d248c978b55ff1fb70f32c0293f313",
+  "initialV4ReleaseSourceCommit": "be8a14b09f4ad1f40a9fdb0429dd16d3942795a9",
+  "currentRepositoryReleaseHead": "69365486064d31f219eaafcc9a497cd29efb5519",
+  "productionUrl": "https://palinode-app.vercel.app",
+  "productionDeploymentId": "dpl_HjZaHi6m7bagByh9icJ8RAJqQrFf",
+  "productionAlias": "palinode-app.vercel.app",
+  "schema": {
+    "total": 46,
+    "writes": 21,
+    "views": 25
+  },
+  "testSummary": {
+    "contract": {
+      "direct": 28,
+      "invariants": 5,
+      "adversarial": 34,
+      "property": 2,
+      "v2": 27,
+      "total": 96
+    },
+    "mutation": {
+      "total": 49,
+      "killed": 46,
+      "retired": 3,
+      "survived": 0
+    },
+    "integration": {
+      "passed": 6,
+      "skipped": 1,
+      "skipReason": "Known Windows GLSim compressed-stream/temp-file runtime blocker"
+    },
+    "frontend": {
+      "tests": 57,
+      "typecheck": "passed",
+      "lint": "passed",
+      "build": "passed"
+    },
+    "browser": {
+      "deterministicRouteAssertions": 96,
+      "consoleErrors": 0,
+      "desktop": "passed",
+      "tablet": "passed",
+      "mobile": "passed",
+      "rateLimitRegression": "passed",
+      "writePaths": "fixtures-and-mocks-only"
+    }
+  },
+  "walletProofTransaction": "0x5550723fae8da058933a3b8adc7a54280170573132ad224b2e00756ff0e63451",
+  "canonicalV4ProofState": {
+    "authentication": "Evidence V1 CLEARED; Evidence V2 independently CLEARED",
+    "revocation": "CONCLUSIVE / MATERIAL / INVALIDATE / MATERIAL_WITHDRAWAL",
+    "propagation": "Claim QUESTIONED; Decision QUARANTINED",
+    "recovery": "CONCLUSIVE / SUPERSEDE / RECOVERY_RESOLVED_SUPERSEDE",
+    "historicalReliance": "V1 authentication remains CLEARED while reliance becomes SUPERSEDED",
+    "byteIdentity": "SOURCE_DIGEST_MISMATCH before semantic adjudication",
+    "walletWrite": "process_impact finalized FINISHED_WITH_RETURN with return 0 and no canonical mutation"
+  },
+  "feePolicy": {
+    "applicationValueWei": "0",
+    "sdk": "genlayer-js 1.1.8",
+    "sdkPath": "writeContract estimates gas and reads eth_gasPrice",
+    "studionetObservedGasPrice": "0",
+    "ciChainWrites": false
+  },
+  "evidenceFiles": [
+    "evidence/studionet/v4/deployment.json",
+    "evidence/studionet/v4/transactions.json",
+    "evidence/studionet/v4/final-state.json",
+    "evidence/studionet/v4/source-parity.json",
+    "evidence/studionet/v4/authority.json",
+    "evidence/studionet/v4/propagation.json",
+    "evidence/studionet/v4/recovery.json",
+    "evidence/studionet/v4/third-party-challenge.json",
+    "evidence/studionet/v4/byte-mismatch.json",
+    "evidence/studionet/v4/frontend-wallet-smoke-postflight.json",
+    "evidence/studionet/v4/freeze-reassessment.json",
+    "evidence/studionet/v4/finality-restart.json",
+    "evidence/studionet/v4/reviewer-fixture.json",
+    "evidence/studionet/v4/recovery-ordering.json",
+    "evidence/studionet/v4/non-cleared-revocation.json",
+    "evidence/studionet/v4/material-revocation.json",
+    "evidence/studionet/v4/cross-party-dependency.json",
+    "evidence/studionet/v4/unauthorized-dependency.json",
+    "evidence/studionet/v4/unauthorized-successor.json",
+    "evidence/studionet/v4/late-edge.json",
+    "evidence/studionet/v4/wrong-wallet-tx-postmortem.json"
+  ]
+}

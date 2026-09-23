@@ -9,7 +9,9 @@ reliance graph without rewriting history.
 **Studionet contract (frozen V4):** `0x05243cB6db90EE210a22Aa3c16fdc4F893d7b13b`<br>
 **Network:** Studionet / chain `61999`<br>
 **Frozen source SHA-256:** `0f23a120776b09be989e6112b34d27ae415e1808232be591f94d1e17d80c5601`<br>
-**Freeze commit:** `14bb4574a8d248c978b55ff1fb70f32c0293f313`<br>
+**Contract source freeze:** `14bb4574a8d248c978b55ff1fb70f32c0293f313`<br>
+**Initial V4 release source:** `be8a14b09f4ad1f40a9fdb0429dd16d3942795a9`<br>
+**Current repository / frontend release HEAD:** final HEAD of this hardening pass, recorded in the machine-readable release manifest and GitHub release<br>
 **Source:** `contracts/palinode_v2.py`
 
 PALINODE is intentionally not a generic AI classifier, ordinary provenance
@@ -335,32 +337,39 @@ canonical mutation. No protocol changes are made by the frontend.
 
 ## Testing
 
-The recorded freeze gates are 55 direct tests, 5 invariant tests, 34
-adversarial tests, 2 property tests, and 46/49 security mutations killed,
-with 3 obsolete overflow-summary mutations retired and 0 survivors. The final
-frontend suite has 49 passing tests, and deterministic browser E2E has 96
-passing responsive assertions with 0 unexpected console errors; desktop,
-tablet, mobile, rate-limit, and real-wallet provider checks passed. These are
-engineering test results, not formal verification.
+The reconciled V4 collection is 28 direct tests, 5 invariant tests, 34
+adversarial tests, 2 property tests, and 27 reviewer-remediation V2 tests: 96
+contract tests in total. The mutation catalogue is 49 total, with 46 killed,
+3 obsolete overflow-summary mutations retired, and 0 survived. The frontend
+suite has 57 passing tests, and deterministic browser E2E has 96 responsive
+route assertions with 0 unexpected console errors; desktop, tablet, mobile,
+rate-limit, and mocked wallet-provider checks passed. These are engineering
+test results, not formal verification.
 
 ## Run locally
 
 From PowerShell in the repository root:
 
 ```powershell
-.venv\Scripts\python.exe -m pytest tests/direct tests/invariants -q
+.venv\Scripts\python.exe -m pytest tests/direct -q
+.venv\Scripts\python.exe -m pytest tests/invariants -q
+.venv\Scripts\python.exe -m pytest tests/adversarial -q
+.venv\Scripts\python.exe -m pytest tests/property -q
+.venv\Scripts\python.exe -m pytest tests/v2 -q
 $env:GENVM_VERSION = "v0.2.16"
 $env:PATH = "$PWD\.venv\Scripts;$env:PATH"
-.venv\Scripts\genvm-lint.exe check contracts/palinode.py --json
-.venv\Scripts\genvm-lint.exe typecheck contracts/palinode.py --json
-.venv\Scripts\genvm-lint.exe schema contracts/palinode.py --output artifacts/palinode_schema.json --json
-.venv\Scripts\python.exe -m pytest tests/adversarial tests/property -q
+.venv\Scripts\genvm-lint.exe lint contracts/palinode_v2.py
+.venv\Scripts\genvm-lint.exe validate contracts/palinode_v2.py
+.venv\Scripts\genvm-lint.exe typecheck contracts/palinode_v2.py
+.venv\Scripts\genvm-lint.exe schema contracts/palinode_v2.py --output artifacts/palinode_schema.json
 .venv\Scripts\python.exe -m pytest tests/integration -q -rs
-.venv\Scripts\python.exe scripts/mutation_checks.py
+.venv\Scripts\python.exe scripts/mutation_checks_v2.py
+.venv\Scripts\python.exe scripts/validate_release_manifest.py
 ```
 
-The same sequence is available as `scripts/phase1_checks.ps1`. Direct tests
-use `genlayer-test` mocks for web and LLM calls; they do not contact Studionet.
+The same contract sequence is available as `scripts/phase1_checks.ps1` and the
+checked-in GitHub Actions workflow runs it in a clean Python 3.14 environment.
+Direct tests use `genlayer-test` mocks for web and LLM calls; they do not contact Studionet.
 The integration suite exercises the supported local GLSim JSON-RPC surface and
 reports runner-specific skips separately; local GLSim is not evidence of
 Studionet deployment compatibility. See `docs/INTEGRATION_TESTING.md` and

@@ -51,6 +51,13 @@ controls the accepted structured result and every state mutation.
 - Source SHA-256: `0f23a120776b09be989e6112b34d27ae415e1808232be591f94d1e17d80c5601`
 - Public repository: https://github.com/GIFTEDLOV/Palinode
 
+Release identity is split deliberately: contract source freeze
+`14bb4574a8d248c978b55ff1fb70f32c0293f313`; initial V4 release source
+`be8a14b09f4ad1f40a9fdb0429dd16d3942795a9`; and the current repository /
+frontend release HEAD, which is the final HEAD of this hardening pass and is
+recorded in the release manifest and GitHub release. The contract itself has
+not changed.
+
 The frontend reads bounded canonical views, distinguishes authentication from
 reliance, renders canonical impact separately from graph reachability, persists
 transaction IDs, and uses the connected EIP-1193 wallet provider for writes.
@@ -107,10 +114,12 @@ Suggested 2–4 minute flow:
 
 Backend V4 assurance recorded for release:
 
-- 55 direct tests
+- 28 direct tests
 - 5 invariant tests
 - 34 adversarial tests
 - 2 property tests
+- 27 reviewer-remediation V2 tests
+- 96 contract tests total
 - 49 mutation cases: 46 killed, 3 retired obsolete mutations, 0 survived
 
 Frontend release gates:

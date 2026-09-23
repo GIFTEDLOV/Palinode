@@ -34,8 +34,9 @@ frontend runtime, read smoke, graph, proof page, or wallet transaction path.
 
 ## Reviewer proof surfaces
 
-The Proof & Security page records the frozen local gates (55 direct, 5
-invariant, 34 adversarial, 2 property), the 49-mutation catalogue (46 killed,
+The Proof & Security page records the frozen local gates (28 direct, 5
+invariant, 34 adversarial, 2 property, 27 reviewer-remediation V2 tests; 96
+total), the 49-mutation catalogue (46 killed,
 3 retired, 0 survived), the live Authority C third-party standing proof, and
 the BODY A/B same-URL `SOURCE_DIGEST_MISMATCH` proof. The UI does not claim that
 the model detected a byte mismatch; deterministic contract identity checking
