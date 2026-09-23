@@ -16,9 +16,9 @@ The release identities are intentionally separate:
 
 - Contract source freeze: `14bb4574a8d248c978b55ff1fb70f32c0293f313`.
 - Initial V4 release source: `be8a14b09f4ad1f40a9fdb0429dd16d3942795a9`.
-- Current repository / frontend release HEAD: the final HEAD of this hardening
-  pass, recorded in `evidence/studionet/v4/release-manifest.json` and the
-  GitHub release.
+- Current repository / frontend release source HEAD:
+  `b59f85d346f7234b50ec15a3f4b97a87fc667cd8`; final metadata and GitHub release
+  records are separate from the source identity.
 
 ## Target network
 

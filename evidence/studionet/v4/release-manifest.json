@@ -8,9 +8,9 @@
   "sourceSha256": "0f23a120776b09be989e6112b34d27ae415e1808232be591f94d1e17d80c5601",
   "contractFreezeCommit": "14bb4574a8d248c978b55ff1fb70f32c0293f313",
   "initialV4ReleaseSourceCommit": "be8a14b09f4ad1f40a9fdb0429dd16d3942795a9",
-  "currentRepositoryReleaseHead": "69365486064d31f219eaafcc9a497cd29efb5519",
+  "currentRepositoryReleaseHead": "b59f85d346f7234b50ec15a3f4b97a87fc667cd8",
   "productionUrl": "https://palinode-app.vercel.app",
-  "productionDeploymentId": "dpl_HjZaHi6m7bagByh9icJ8RAJqQrFf",
+  "productionDeploymentId": "dpl_579JrKAKBGanAcp9RtVnZX9Gaj8v",
   "productionAlias": "palinode-app.vercel.app",
   "schema": {
     "total": 46,

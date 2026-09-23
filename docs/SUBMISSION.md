@@ -67,7 +67,7 @@ Source: `contracts/palinode_v2.py`<br>
 SHA-256: `0f23a120776b09be989e6112b34d27ae415e1808232be591f94d1e17d80c5601`<br>
 Contract source freeze commit: `14bb4574a8d248c978b55ff1fb70f32c0293f313`<br>
 Initial V4 release source commit: `be8a14b09f4ad1f40a9fdb0429dd16d3942795a9`<br>
-Current repository / frontend release HEAD: final HEAD of this hardening pass; see the release manifest<br>
+Current repository / frontend release source HEAD: `b59f85d346f7234b50ec15a3f4b97a87fc667cd8`; final metadata commit and GitHub release are recorded separately<br>
 Archived V1: `0x9c9d1993cd938846D1163Bba9AA81AC6d165de88`
 
 ## NETWORK

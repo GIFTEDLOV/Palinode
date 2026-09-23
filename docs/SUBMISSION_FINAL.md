@@ -54,8 +54,8 @@ controls the accepted structured result and every state mutation.
 Release identity is split deliberately: contract source freeze
 `14bb4574a8d248c978b55ff1fb70f32c0293f313`; initial V4 release source
 `be8a14b09f4ad1f40a9fdb0429dd16d3942795a9`; and the current repository /
-frontend release HEAD, which is the final HEAD of this hardening pass and is
-recorded in the release manifest and GitHub release. The contract itself has
+frontend release source HEAD, `b59f85d346f7234b50ec15a3f4b97a87fc667cd8`; the
+final metadata commit and GitHub release are recorded separately. The contract itself has
 not changed.
 
 The frontend reads bounded canonical views, distinguishes authentication from

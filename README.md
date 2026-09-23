@@ -11,7 +11,7 @@ reliance graph without rewriting history.
 **Frozen source SHA-256:** `0f23a120776b09be989e6112b34d27ae415e1808232be591f94d1e17d80c5601`<br>
 **Contract source freeze:** `14bb4574a8d248c978b55ff1fb70f32c0293f313`<br>
 **Initial V4 release source:** `be8a14b09f4ad1f40a9fdb0429dd16d3942795a9`<br>
-**Current repository / frontend release HEAD:** final HEAD of this hardening pass, recorded in the machine-readable release manifest and GitHub release<br>
+**Current repository / frontend release source HEAD:** `b59f85d346f7234b50ec15a3f4b97a87fc667cd8` (the final metadata commit and GitHub release are recorded separately)<br>
 **Source:** `contracts/palinode_v2.py`
 
 PALINODE is intentionally not a generic AI classifier, ordinary provenance

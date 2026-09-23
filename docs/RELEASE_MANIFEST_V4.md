@@ -13,12 +13,15 @@ https://palinode-app.vercel.app. The contract is frozen at
 `0x05243cB6db90EE210a22Aa3c16fdc4F893d7b13b`; this hardening pass does not
 change or redeploy it.
 
+Current production deployment: `dpl_579JrKAKBGanAcp9RtVnZX9Gaj8v`.
+
 The three repository identities are distinct:
 
 - Contract source freeze: `14bb4574a8d248c978b55ff1fb70f32c0293f313`.
 - Initial V4 release source: `be8a14b09f4ad1f40a9fdb0429dd16d3942795a9`.
-- Current repository / frontend release HEAD: the final HEAD of this pass,
-  recorded in the JSON index and the GitHub release.
+- Current repository / frontend release HEAD: `b59f85d346f7234b50ec15a3f4b97a87fc667cd8`,
+  the validated hardening source HEAD recorded in the JSON index; the final
+  metadata commit and GitHub release follow this source.
 
 ## Frozen contract
 

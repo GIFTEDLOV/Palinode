@@ -10,7 +10,7 @@ the application and deployment source are `contracts/palinode_v2.py`.
 |---|---|
 | Contract source freeze commit | `14bb4574a8d248c978b55ff1fb70f32c0293f313` |
 | Initial V4 release source commit | `be8a14b09f4ad1f40a9fdb0429dd16d3942795a9` |
-| Current repository / frontend release HEAD | final HEAD of this hardening pass; see the release manifest |
+| Current repository / frontend release source HEAD | `b59f85d346f7234b50ec15a3f4b97a87fc667cd8`; final metadata commit is recorded separately |
 | Contract source SHA-256 | `0f23a120776b09be989e6112b34d27ae415e1808232be591f94d1e17d80c5601` |
 | Source path | `contracts/palinode_v2.py` |
 | Studionet address | `0x05243cB6db90EE210a22Aa3c16fdc4F893d7b13b` |
