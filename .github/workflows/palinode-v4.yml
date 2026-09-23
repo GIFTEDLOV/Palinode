@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Check out tracked source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python 3.14
         uses: actions/setup-python@v6
@@ -106,6 +108,8 @@ jobs:
     steps:
       - name: Check out tracked source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node 24
         uses: actions/setup-node@v4
@@ -155,6 +159,8 @@ jobs:
     steps:
       - name: Check out tracked source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node 24
         uses: actions/setup-node@v4
